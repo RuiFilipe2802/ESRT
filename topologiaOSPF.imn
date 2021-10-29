@@ -363,8 +363,8 @@ node n7 {
 	!
     }
     canvas c1
-    iconcoords {1002.0 402.0}
-    labelcoords {1044.0 412.0}
+    iconcoords {1014.0 403.0}
+    labelcoords {1056.0 413.0}
     interface-peer {eth0 n8}
     interface-peer {eth1 n6}
     services {OSPFv2 zebra IPForward}
@@ -541,8 +541,8 @@ node n10 {
 	!
     }
     canvas c1
-    iconcoords {798.0 404.0}
-    labelcoords {777.0 385.0}
+    iconcoords {798.0 401.0}
+    labelcoords {777.0 382.0}
     interface-peer {eth0 n4}
     interface-peer {eth1 n6}
     interface-peer {eth2 n8}
@@ -758,8 +758,8 @@ node n17 {
 	!
     }
     canvas c1
-    iconcoords {359.0 752.0}
-    labelcoords {359.0 784.0}
+    iconcoords {358.0 752.0}
+    labelcoords {358.0 784.0}
     interface-peer {eth0 n9}
 }
 
@@ -774,8 +774,8 @@ node n18 {
 	!
     }
     canvas c1
-    iconcoords {387.0 68.0}
-    labelcoords {387.0 100.0}
+    iconcoords {371.0 70.0}
+    labelcoords {371.0 102.0}
     interface-peer {eth0 n5}
 }
 
@@ -817,6 +817,7 @@ link l1 {
 }
 
 link l2 {
+    delay 5000
     nodes {n1 n2}
     bandwidth 0
 }
@@ -963,7 +964,7 @@ annotation a1 {
     label {Physical Network}
     labelcolor black
     fontfamily {Arial}
-    fontsize 16
+    fontsize {16}
     effects {bold}
     canvas c1
 }
