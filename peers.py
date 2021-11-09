@@ -34,7 +34,7 @@ def error(ip):
     err[2]=time.gmtime(0)
     return err
     
-def send_neighbors(ip,ip1,ip2,porta):
+def send_neighbors(ip,ip1,ip2,porta,porta1,porta2):
     send=bytearray(1)
     send[0]=0b11
     array = ip.split(".")
@@ -50,7 +50,8 @@ def send_neighbors(ip,ip1,ip2,porta):
 
     send[4]=time.gmtime(0)
     send[5]=porta
-
+    send[6]=porta1
+    send[7]=porta2
     return send
     
     
