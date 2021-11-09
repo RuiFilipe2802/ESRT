@@ -203,7 +203,7 @@ node n2 {
 	interface eth1
 	  ip address 192.168.0.13/30
 	!
-	router ospf
+	router rip
 	  neighbor 192.168.0.5
 	  neighbor 192.168.0.14
 	!
@@ -261,7 +261,7 @@ node n3 {
 	interface eth3
 	  ip address 10.0.2.0/29
 	!
-	router ospf
+	router rip
 	  neighbor 192.168.0.13
 	  neighbor 192.168.0.22
 	  neighbor 192.168.0.17
@@ -442,7 +442,7 @@ node n6 {
 	interface eth4
 	  ip address 192.168.0.58/30
 	!
-	router ospf
+	router rip
 	  neighbor 192.168.0.57
 	  neighbor 192.168.0.49
 	  neighbor 192.168.0.33
@@ -492,7 +492,7 @@ node n7 {
 	interface eth1
 	  ip address 192.168.0.46/30
 	!
-	router ospf
+	router rip
 	  neighbor 192.168.0.41
 	  neighbor 192.168.0.45
 	!
@@ -556,7 +556,7 @@ node n8 {
 	interface eth4
 	  ip address 192.168.0.66/30
 	!
-	router ospf
+	router rip
 	  neighbor 192.168.0.25
 	  neighbor 192.168.0.65
 	  neighbor 192.168.0.37
@@ -618,7 +618,7 @@ node n9 {
 	interface eth3
 	  ip address 10.0.7.1/29
 	!
-	router ospf
+	router rip
 	  neighbor 192.168.0.21
 	  neighbor 192.168.0.26
 	  neighbor 192.168.0.62
@@ -674,7 +674,7 @@ node n10 {
 	interface eth2
 	  ip address 192.168.0.37/30
 	!
-	router ospf
+	router rip
 	  neighbor 192.168.0.29
 	  neighbor 192.168.0.38
 	  neighbor 192.168.0.34
@@ -791,10 +791,11 @@ node n15 {
 	interface eth2
 	  ip address 10.0.6.1/29
 	!
-	router ospf
-	  network 192.168.0.52/30 area 0
-	  network 192.168.0.56/30 area 0
-	  network 10.0.6.0/29 area 0
+	router rip
+	  neighbor 192.168.0.58
+	  neighbor 192.168.0.55
+	  network 10.0.6.0/29
+	
 	!
 	
 	}
@@ -844,7 +845,7 @@ node n16 {
 	interface eth2
 	  ip address 10.0.8.1/29
 	!
-	router ospf
+	router rip
 	  neighbor 192.168.0.66
 	  neighbor 192.168.0.61
 	  network 10.0.8.0/29
