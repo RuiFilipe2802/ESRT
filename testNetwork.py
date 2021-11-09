@@ -6,7 +6,7 @@ import ntplib
 import socket
 
 ip = sys.argv[1]
-UDP_PORT = 5005
+UDP_PORT = 6050
 
 def getTime():
     c = ntplib.NTPClient()
