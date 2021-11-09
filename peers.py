@@ -2,16 +2,14 @@ import socket
 import base64
 
 HOST = '127.0.0.1'  # Standard loopback interface address (localhost)
-PORT = 65432        # Port to listen on (non-privileged ports are > 1023)
+PORT = 9998       # Port to listen on (non-privileged ports are > 1023)
 
 def connect(ip):
-    con = []
-    con.append(0)
-    con.append(ip)
-    print(ip)
-    array = base64.b64encode(con)
-    
-    print(b_con)
+    con = bytearray(1)
+    con[0] = 0b0
+    array = ip.split(".")
+    for a in range(len(array)):
+        con.append(int(array[a]))
     return con
     
 
