@@ -1,19 +1,26 @@
+from datetime import datetime
 import socket
-import base64
-import time
-import time
+from time import *
+import _thread
+import ntplib
+from datetime import datetime
+host = '192.168.58.248'  # Standard loopback interface address (localhost)
+port = 9998      # Port to listen on (non-privileged ports are > 1023)
 
-host = '127.0.0.1'  # Standard loopback interface address (localhost)
-port = 9999      # Port to listen on (non-privileged ports are > 1023)
 
-#tpm = 0
+def getTime():
+    c = ntplib.NTPClient()
+    response = c.request('pool.ntp.org', version=3)
+    return ctime(response.tx_time).encode('utf-8')
+    #tpm = 0
 def connect(ip):
-    con = bytearray(1)
+    con = bytearray(8)
     con[0] = 0b0
     array = ip.split(".")
     for a in range(len(array)):
         con.append(int(array[a]))
-    con[2]=time.gmtime(0)
+    #con[5:8] = getTime()
+    print(con.decode)
     return con
 
 #tpm = 1
@@ -24,7 +31,7 @@ def disconnect(ip):
 
     for a in range(len(array)):
         dis.append(int(array[a]))
-    dis[2]=time.gmtime(0)
+    dis.append(bytes(getTime()))
     return dis
 
 #tpm = 2
@@ -35,7 +42,7 @@ def error(ip):
 
     for a in range(len(array)):
         err.append(int(array[a]))
-    err[2]=time.gmtime(0)
+    err.append(bytes(getTime()))
     return err
 
 #tpm = 3  
@@ -53,7 +60,7 @@ def send_neighbors(ip,ip1,ip2,porta,porta1,porta2):
     for c in range(len(array3)):
         send.append(int(array3[c]))
 
-    send.append(bytes(time.gmtime(0)))
+    send.append(bytes(getTime()))
     send.append(porta)
     send.append(porta1)
     send.append(porta2)
@@ -67,10 +74,10 @@ def clock_adj(ip):
 
     for a in range(len(array)):
         c_adj.append(int(array[a]))
-    c_adj.append(bytes(time.gmtime(0)))
+    c_adj.append(bytes(getTime()))
     return c_adj
 
-if __name__ == "__main__":
+def serverComm():
 
     ClientSocket = socket.socket()
 
@@ -80,14 +87,21 @@ if __name__ == "__main__":
     except socket.error as e:
         print(str(e))
 
-
     Response = ClientSocket.recv(1024)
     print(Response.decode('utf-8'))
     
     while True:
-        Input = input('Say Something: ')
-        ClientSocket.send(str.encode(Input))
+        #Input = input('Say Something: ')
+        packet = connect("192.168.58.25")
+        ClientSocket.send(packet)
         Response = ClientSocket.recv(1024)
         print(Response.decode('utf-8'))
 
     ClientSocket.close()
+
+if __name__ == "__main__":
+    
+    _thread.start_new_thread(serverComm,())
+
+    while 1:
+        pass
