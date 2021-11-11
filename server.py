@@ -3,13 +3,14 @@ import os
 from _thread import *
 
 host = '127.0.0.1'  # Standard loopback interface address (localhost)
-port = 9998       # Port to listen on (non-privileged ports are > 1023)
+port = 9999      # Port to listen on (non-privileged ports are > 1023)
 
 
 def thread_client(connection):
     connection.send(str.encode('Welcome to the Server'))
     while True:
         data = connection.recv(2048)
+        #interpretar data de modo a ver o que o peer quer fazer, ou conectar ou desconectar
         reply = 'Server Says: ' + data.decode('utf-8')
         if not data:
             break
