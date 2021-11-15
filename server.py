@@ -1,9 +1,38 @@
 import socket
 import os
 from _thread import *
+import time
+import ntplib
+from time import ctime
 
-host = '127.0.0.1'  # Standard loopback interface address (localhost)
-port = 9999      # Port to listen on (non-privileged ports are > 1023)
+host = '192.168.58.248'  # Standard loopback interface address (localhost)
+port = 9998      # Port to listen on (non-privileged ports are > 1023)
+
+def getTime():
+    c = ntplib.NTPClient()
+    response = c.request('pool.ntp.org', version=3)
+    return response.tx_time
+
+#tpm = 3  
+def send_neighbors(ip,ip1,ip2,porta,porta1,porta2):
+    send=bytearray(1)
+    send[0]=0b11
+    array = ip.split(".")
+    array2 = ip1.split(".")
+    array3 = ip2.split(".") 
+
+    for a in range(len(array)):
+        send.append(int(array[a]))
+    for b in range(len(array2)):
+        send.append(int(array2[b]))
+    for c in range(len(array3)):
+        send.append(int(array3[c]))
+
+    send.append(bytes(getTime()))
+    send.append(bytes(porta))
+    send.append(bytes(porta1))
+    send.append(bytes(porta2))
+    return send
 
 
 def thread_client(connection):
@@ -11,10 +40,12 @@ def thread_client(connection):
     while True:
         data = connection.recv(2048)
         #interpretar data de modo a ver o que o peer quer fazer, ou conectar ou desconectar
-        reply = 'Server Says: ' + data.decode('utf-8')
         if not data:
             break
-        connection.sendall(str.encode(reply))
+        if data[0] == 0:
+            print(data)
+            connection.sendall(send_neighbors("120.20","121.1","122.2",5,4,3))
+        #elif data[0] == 1:
     connection.close()
 
 if __name__ == "__main__":
