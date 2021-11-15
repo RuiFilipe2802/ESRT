@@ -45,26 +45,6 @@ def error(ip):
     err.append(bytes(getTime()))
     return err
 
-#tpm = 3  
-def send_neighbors(ip,ip1,ip2,porta,porta1,porta2):
-    send=bytearray(1)
-    send[0]=0b11
-    array = ip.split(".")
-    array2 = ip1.split(".")
-    array3 = ip2.split(".") 
-
-    for a in range(len(array)):
-        send.append(int(array[a]))
-    for b in range(len(array2)):
-        send.append(int(array2[b]))
-    for c in range(len(array3)):
-        send.append(int(array3[c]))
-
-    send.append(bytes(getTime()))
-    send.append(porta)
-    send.append(porta1)
-    send.append(porta2)
-    return send
     
 #tpm = 4
 def clock_adj(ip):
