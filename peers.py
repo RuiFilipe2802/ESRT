@@ -6,12 +6,12 @@ import ntplib
 from datetime import datetime
 host = '192.168.58.248'  # Standard loopback interface address (localhost)
 port = 9998      # Port to listen on (non-privileged ports are > 1023)
-
+port2 = 5000
 
 def getTime():
     c = ntplib.NTPClient()
     response = c.request('pool.ntp.org', version=3)
-    return ctime(response.tx_time).encode('utf-8')
+    return ctime(int(response.recv_time))
     
 #tpm = 0
 def connect(ip):
@@ -81,9 +81,20 @@ def serverComm():
 
     ClientSocket.close()
 
+def peerServer():
+    
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    s.bind(("", port))
+    print ("waiting on port:", port2)
+    while 1:
+        data, addr = s.recvfrom(1024)
+        print(data)
+
 if __name__ == "__main__":
+    print(getTime())
     
     _thread.start_new_thread(serverComm,())
+
 
     while 1:
         pass
