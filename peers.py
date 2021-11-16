@@ -6,55 +6,57 @@ import ntplib
 from datetime import datetime
 host = '192.168.58.248'  # Standard loopback interface address (localhost)
 port = 9998      # Port to listen on (non-privileged ports are > 1023)
-
+port2 = 5000
 
 def getTime():
     c = ntplib.NTPClient()
     response = c.request('pool.ntp.org', version=3)
-    return ctime(response.tx_time).encode('utf-8')
-    #tpm = 0
+    return ctime(int(response.recv_time))
+    
+#tpm = 0
 def connect(ip):
-    con = bytearray(8)
-    con[0] = 0b0
+    con = bytearray(1)
+    con.append(0b0)
     array = ip.split(".")
     for a in range(len(array)):
         con.append(int(array[a]))
-    #con[5:8] = getTime()
+    con.append(getTime())
     print(con.decode)
+
     return con
 
 #tpm = 1
 def disconnect(ip):
     dis = bytearray(1)
-    dis[0] = 0b1
+    dis.append(0b1)
     array = ip.split(".")
 
     for a in range(len(array)):
         dis.append(int(array[a]))
-    dis.append(bytes(getTime()))
+    dis.append(getTime())
     return dis
 
 #tpm = 2
 def error(ip):
     err = bytearray(1)
-    err[0] = 0b10
+    err.append(0b10)
     array = ip.split(".")
 
     for a in range(len(array)):
         err.append(int(array[a]))
-    err.append(bytes(getTime()))
+    err.append(getTime())
     return err
 
     
 #tpm = 4
 def clock_adj(ip):
     c_adj = bytearray(1)
-    c_adj[0] = 0b100
+    c_adj.append(0b100)
     array = ip.split(".")
 
     for a in range(len(array)):
         c_adj.append(int(array[a]))
-    c_adj.append(bytes(getTime()))
+    c_adj.append(getTime())
     return c_adj
 
 def serverComm():
@@ -79,9 +81,20 @@ def serverComm():
 
     ClientSocket.close()
 
+def peerServer():
+    
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    s.bind(("", port))
+    print ("waiting on port:", port2)
+    while 1:
+        data, addr = s.recvfrom(1024)
+        print(data)
+
 if __name__ == "__main__":
+    print(getTime())
     
     _thread.start_new_thread(serverComm,())
+
 
     while 1:
         pass
