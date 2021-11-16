@@ -131,16 +131,16 @@ def serverComm():
 
     ClientSocket.close()
 
-def peerServer():
+def peerServer(ip_src,porta_src):
     
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    s.bind(("127.0.0.1", port2))
-    print ("waiting on port:", port2)
+    s.bind((ip_src, porta_src))
+    print ("waiting on port:", porta_src)
     while 1:
         data, addr = s.recvfrom(1024)
         print(data)
 
-def peerClient(ip_dest,porta):
+def peerClient(ip_dest,porta_dest):
     # create dgram udp socket
     try:
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -154,7 +154,7 @@ def peerClient(ip_dest,porta):
         
         try :
             #Set the whole string
-            s.sendto(msg, (ip_dest, porta))
+            s.sendto(msg, (ip_dest, porta_dest))
             
             # receive data from client (data, addr)
             d = s.recvfrom(1024)
@@ -175,7 +175,7 @@ if __name__ == "__main__":
     _thread.start_new_thread(serverComm,())
     
 
-    _thread.start_new_thread(peerServer,())
+    _thread.start_new_thread(peerServer,(ip_source,porta_source))
 
     _thread.start_new_thread(peerClient,(ip_dest1,porta_dest1))
     _thread.start_new_thread(peerClient,(ip_dest2,porta_dest2))
