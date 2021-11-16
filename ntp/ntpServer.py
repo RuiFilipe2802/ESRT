@@ -6,12 +6,12 @@ import ntplib
 import socket
 import os
 
-IP = "10.0.5.3"
+IP = "10.0.5.2"
 UDP_PORT = 6050
 
 def getTime():
     c = ntplib.NTPClient()
-    response = c.request('178.33.203.115', version=3)
+    response = c.request('151.101.134.137', version=3)
     return ctime(response.tx_time)
 
 if __name__ == "__main__":
