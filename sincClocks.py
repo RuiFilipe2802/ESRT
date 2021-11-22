@@ -8,10 +8,11 @@ response = c.request ('pool.ntp.org')
 ts = response.tx_time 
 _date = time.strftime ('%y-%m-%d ' , time.localtime(ts)) 
 os.system('sudo date --set='+_date)
+_time = time.strftime('%H:%M:%S', time.localtime(ts))
 t = datetime.fromtimestamp(response.orig_time) 
-_time = t.strftime("%H:%M:%S.%f")
+#_time = t.strftime("%H:%M:%S.%f")
 os.system('sudo date +%T -s "'+_time+'"')
-os.system('date +%FT%T.%3N')
+#os.system('date +%FT%T.%3N')
 
 
 
