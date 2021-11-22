@@ -12,7 +12,7 @@ port2 = 5000
 ip_source=""
 ip_dest1=""
 ip_dest2=""
-            
+
 porta_source=0
 porta_dest1=0
 porta_dest2=0
@@ -50,7 +50,6 @@ def error(ip):
     err = bytearray(1)
     err.append(0b10)
     array = ip.split(".")
-
     for a in range(len(array)):
         err.append(int(array[a]))
     err.append(getTime())
@@ -60,26 +59,19 @@ def package_interpretation(Response):
     if Response[0] == 3:
         for a in range(len(Response[1:4])):
             ip_source=a.join(".")
-
         for b in range(len(Response[5:8])):
             ip_dest1=b.join(".")
-
         for c in range(len(Response[9:12])):
             ip_dest2=c.join(".")
-
         porta_source=Response[13:14]
         porta_dest1=Response[15:16]
         porta_dest2=Response[17:18]
-
-    
-
-    
+  
 #tpm = 4
 def clock_adj(ip):
     c_adj = bytearray(1)
     c_adj.append(0b100)
     array = ip.split(".")
-
     for a in range(len(array)):
         c_adj.append(int(array[a]))
     c_adj.append(getTime())
@@ -88,16 +80,13 @@ def clock_adj(ip):
 def serverComm():
 
     ClientSocket = socket.socket()
-
     print('Waiting for connection')
     try:
         ClientSocket.connect((host, port))
     except socket.error as e:
         print(str(e))
-
     Response = ClientSocket.recv(1024)
     print(Response.decode('utf-8'))
-    
     while True:
         #Input = input('Say Something: ')
         packet = connect("192.168.58.25")
@@ -107,7 +96,6 @@ def serverComm():
 
         if Response[0] == 3:
             
-
             for a in range(Response[1:4]):
                 ip_source.join(a.join("."))
 
@@ -116,7 +104,6 @@ def serverComm():
 
             for c in range(Response[9:12]):
                 ip_dest2.join(c.join("."))
-
 
             for d in range(Response[13:14]):
                 porta_source.join(d)
@@ -127,8 +114,6 @@ def serverComm():
             for f in range(Response[17:18]):
                 porta_dest2.join(f)
             
-
-
     ClientSocket.close()
 
 def peerServer(ip_src,porta_src):
@@ -148,14 +133,11 @@ def peerClient(ip_dest,porta_dest):
         print ('Failed to create socket')
         sys.exit()
 
-
     while(1) :
         msg = bytes('Pouca treta'.encode())
-        
         try :
             #Set the whole string
             s.sendto(msg, (ip_dest, porta_dest))
-            
             # receive data from client (data, addr)
             d = s.recvfrom(1024)
             reply = d[0]
@@ -170,16 +152,11 @@ def peerClient(ip_dest,porta_dest):
 
 
 if __name__ == "__main__":
-
     
     _thread.start_new_thread(serverComm,())
-    
-
     _thread.start_new_thread(peerServer,(ip_source,porta_source))
-
     _thread.start_new_thread(peerClient,(ip_dest1,porta_dest1))
     _thread.start_new_thread(peerClient,(ip_dest2,porta_dest2))
-
 
     while 1:
         pass
