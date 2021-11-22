@@ -5,6 +5,8 @@ import _thread
 import ntplib
 from datetime import datetime
 import sys
+import mysql.connector
+
 host = '192.168.58.248'  # Standard loopback interface address (localhost)
 port = 9998      # Port to listen on (non-privileged ports are > 1023)
 port2 = 5000
@@ -12,10 +14,23 @@ port2 = 5000
 ip_source=""
 ip_dest1=""
 ip_dest2=""
+ip_disc=""
             
 porta_source=0
 porta_dest1=0
 porta_dest2=0
+
+mydb = mysql.connector.connect(
+  host='localhost',
+  user="root",
+  password="1234",
+)
+
+cur = mydb.cursor()
+
+cur.execute("CREATE DATABASE peer_table IF NOT EXIST")
+cur.execute("CREATE TABLE routing_table (ip_Dest VARCHAR(255),port VARCHAR(255), prox VARCHAR(255)")
+
 
 def getTime():
     c = ntplib.NTPClient()
@@ -126,6 +141,11 @@ def serverComm():
 
             for f in range(Response[17:18]):
                 porta_dest2.join(f)
+
+        
+        if Response[0]==4:
+            for a in range(Response[1:4]):
+                ip_disc.join(a.join("."))
             
 
 
@@ -167,18 +187,38 @@ def peerClient(ip_dest,porta_dest):
             print ('Error Code : ' + str(msg[0]) + ' Message ' + msg[1])
             sys.exit()  
 
+def create_DB():
+    cur.execute("INSERT INTO routing_table(ip_Dest, port) VALUES(%s,%s)",(ip_dest1,porta_dest1))
+    cur.execute("INSERT INTO routing_table(ip_Dest, port) VALUES(%s,%s)",(ip_dest2,porta_dest2))
+    #mydb.commit()
+
+def update_DB():
+    if (cur.execute("SELECT * FROM routing_table WHERE ip_Dest=%s",ip_disc)):
+        cur.execute("DELETE FROM routing_table WHERE ip_Dest=%s",ip_disc)
+        mydb.commit()
+
 
 
 if __name__ == "__main__":
 
+    cur.execute("CREATE DATABASE peer_table IF NOT EXIST")
+    cur.execute("CREATE TABLE routing_table (ip_Dest VARCHAR(255),port VARCHAR(255), prox VARCHAR(255)")
+
+    ip_dest1="192.3.4.6"
+    ip_dest2="193.2.1.4"
+    porta_dest1=4000
+    porta_dest2=5000
+    create_DB()
+    for x in cur:
+        print(x)
     
-    _thread.start_new_thread(serverComm,())
+    #_thread.start_new_thread(serverComm,())
     
 
-    _thread.start_new_thread(peerServer,(ip_source,porta_source))
+    #_thread.start_new_thread(peerServer,(ip_source,porta_source))
 
-    _thread.start_new_thread(peerClient,(ip_dest1,porta_dest1))
-    _thread.start_new_thread(peerClient,(ip_dest2,porta_dest2))
+    #_thread.start_new_thread(peerClient,(ip_dest1,porta_dest1))
+    #_thread.start_new_thread(peerClient,(ip_dest2,porta_dest2))
 
 
     while 1:
