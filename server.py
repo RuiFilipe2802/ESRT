@@ -4,11 +4,13 @@ from _thread import *
 import time
 import ntplib
 from time import ctime, sleep
+import threading
 
 host = '127.0.0.1'  # Standard loopback interface address (localhost)
-port = 9999     # Port to listen on (non-privileged ports are > 1023)
+port = 9998     # Port to listen on (non-privileged ports are > 1023)
 
 varialvel_broadcast = 0
+
 
 def getTime():
     c = ntplib.NTPClient()
@@ -56,20 +58,30 @@ def warning_con_end(ip):
     for a in range(len(array)):
         con_ended.append(int(array[a]))
 
+def thread_listening(connect):
+    while True:
+        data = connect.recv(2048)
+        
 
 def thread_client(connection):
     connection.send(str.encode('Welcome to the Server'))
     data = connection.recv(2048)
+    start_new_thread(thread_listening,(connection, ))
     while True:
-        data = connection.recv(2048)
         #interpretar data de modo a ver o que o peer quer fazer, ou conectar ou desconectar
+        
         if data[0] == 0:
-            connection.send(send_neighbors("120.20","121.1","122.2",5,4,3))
+            print("ola2")
+            #connection.send(send_neighbors("120.20","121.1","122.2",5,4,3))
+            
         elif data[0] == 1:
-            connection.send()
+            print("ola3")
+            
         if varialvel_broadcast == 1:
             connection.send(connection_ended('127.0.0.1'))
             break
+        print("ola")
+        sleep(10)
     connection.close()
 
 if __name__ == "__main__":

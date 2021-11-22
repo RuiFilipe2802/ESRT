@@ -19,7 +19,7 @@ node n1 {
     }
     canvas c1
     iconcoords {324.0 329.0}
-    labelcoords {326.0 310.0}
+    labelcoords {324.0 310.0}
     interface-peer {eth0 n5}
     interface-peer {eth1 n2}
     interface-peer {eth2 n4}
@@ -141,7 +141,7 @@ node n3 {
     }
     canvas c1
     iconcoords {327.0 518.0}
-    labelcoords {323.0 558.0}
+    labelcoords {324.0 554.0}
     interface-peer {eth0 n2}
     interface-peer {eth1 n9}
     interface-peer {eth2 n4}
@@ -199,7 +199,7 @@ node n4 {
     }
     canvas c1
     iconcoords {436.0 423.0}
-    labelcoords {458.0 410.0}
+    labelcoords {460.0 410.0}
     interface-peer {eth0 n1}
     interface-peer {eth1 n3}
     interface-peer {eth2 n10}
@@ -258,7 +258,7 @@ node n5 {
     }
     canvas c1
     iconcoords {497.0 236.0}
-    labelcoords {502.0 271.0}
+    labelcoords {505.0 270.0}
     interface-peer {eth0 n1}
     interface-peer {eth1 n6}
     custom-config {
@@ -451,7 +451,7 @@ node n6 {
     }
     canvas c1
     iconcoords {921.0 328.0}
-    labelcoords {932.0 311.0}
+    labelcoords {930.0 313.0}
     interface-peer {eth0 n7}
     interface-peer {eth1 n5}
     interface-peer {eth2 n10}
@@ -528,7 +528,7 @@ node n7 {
     }
     canvas c1
     iconcoords {1031.0 421.0}
-    labelcoords {1073.0 431.0}
+    labelcoords {1068.0 431.0}
     interface-peer {eth0 n8}
     interface-peer {eth1 n6}
     services {OSPFv2 zebra IPForward}
@@ -599,7 +599,7 @@ node n8 {
     }
     canvas c1
     iconcoords {930.0 516.0}
-    labelcoords {935.0 550.0}
+    labelcoords {937.0 550.0}
     interface-peer {eth0 n9}
     interface-peer {eth1 n7}
     interface-peer {eth2 n10}
@@ -740,7 +740,7 @@ node n10 {
     }
     canvas c1
     iconcoords {819.0 423.0}
-    labelcoords {798.0 404.0}
+    labelcoords {792.0 408.0}
     interface-peer {eth0 n4}
     interface-peer {eth1 n6}
     interface-peer {eth2 n8}
@@ -803,8 +803,8 @@ node n11 {
 	!
     }
     canvas c1
-    iconcoords {169.0 195.0}
-    labelcoords {147.0 184.0}
+    iconcoords {145.0 211.0}
+    labelcoords {123.0 200.0}
     interface-peer {eth0 n1}
 }
 
@@ -1016,9 +1016,17 @@ node n18 {
 	!
     }
     canvas c1
-    iconcoords {272.0 98.0}
-    labelcoords {246.0 92.0}
+    iconcoords {263.0 103.0}
+    labelcoords {237.0 97.0}
     interface-peer {eth0 n23}
+    services {DefaultRoute UserDefined}
+    custom-config {
+	custom-config-id service:UserDefined
+	custom-command UserDefined
+	config {
+	cmdup=('chmod +x dnsEnabled.sh', 'sudo ./dnsEnabled.sh', )
+	}
+    }
 }
 
 node n24 {
@@ -1170,8 +1178,8 @@ node n22 {
 	!
     }
     canvas c1
-    iconcoords {455.0 45.0}
-    labelcoords {455.0 77.0}
+    iconcoords {445.0 56.0}
+    labelcoords {445.0 88.0}
     interface-peer {eth0 n23}
 }
 
@@ -1366,7 +1374,7 @@ annotation a7 {
 }
 
 annotation a1 {
-    iconcoords {559.0 341.0}
+    iconcoords {558.0 342.0}
     type text
     label {Physical Network}
     labelcolor black
@@ -1384,7 +1392,7 @@ annotation a2 {
 }
 
 annotation a5 {
-    iconcoords {59 127 277 261}
+    iconcoords {34 142 254 278}
     type oval
     label {}
     labelcolor black
@@ -1423,7 +1431,7 @@ annotation a8 {
 }
 
 annotation a9 {
-    iconcoords {199 3 584 173}
+    iconcoords {186 8 575 182}
     type oval
     label {}
     labelcolor black
