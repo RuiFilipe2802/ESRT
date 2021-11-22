@@ -7,9 +7,13 @@ from time import ctime, sleep
 import threading
 
 host = '127.0.0.1'  # Standard loopback interface address (localhost)
-port = 9998     # Port to listen on (non-privileged ports are > 1023)
+port = 9999     # Port to listen on (non-privileged ports are > 1023)
 
-varialvel_broadcast = 0
+variavel_broadcast = 0
+lista_mensagens = []
+verificar_mensagens = []
+lock = threading.Lock()
+
 
 
 def getTime():
@@ -58,30 +62,40 @@ def warning_con_end(ip):
     for a in range(len(array)):
         con_ended.append(int(array[a]))
 
-def thread_listening(connect):
+def thread_listening(connect, n_t):
     while True:
         data = connect.recv(2048)
+        verificar_mensagens[n_t] = 1
+        lista_mensagens[n_t] = data
+        print(str(lista_mensagens[n_t]) + " numero: "+str(n_t))
         
 
-def thread_client(connection):
-    connection.send(str.encode('Welcome to the Server'))
-    data = connection.recv(2048)
-    start_new_thread(thread_listening,(connection, ))
+def thread_client(connection,n_thread):
+    
+    verificar_mensagens[n_thread] = 0
+    
+    start_new_thread(thread_listening,(connection, n_thread,))
     while True:
         #interpretar data de modo a ver o que o peer quer fazer, ou conectar ou desconectar
+        #lock.acquire()
+        if verificar_mensagens[n_thread] == 1:
+            data = lista_mensagens[n_thread]
+            if data[0] == 0:
+                print("tpm 0")
+                connection.send("ola".encode('utf-8'))
+                #connection.send(send_neighbors("120.20","121.1","122.2",5,4,3))
+                
+            elif data[0] == 1:
+                print("tpm 1")
+                connection.send("ole".encode('utf-8'))
+                
+            verificar_mensagens[n_thread] = 0
+        #lock.release
+            
+        if variavel_broadcast == 1:
+            connection.send('mudei esta variavel maltinha')
+            
         
-        if data[0] == 0:
-            print("ola2")
-            #connection.send(send_neighbors("120.20","121.1","122.2",5,4,3))
-            
-        elif data[0] == 1:
-            print("ola3")
-            
-        if varialvel_broadcast == 1:
-            connection.send(connection_ended('127.0.0.1'))
-            break
-        print("ola")
-        sleep(10)
     connection.close()
 
 if __name__ == "__main__":
@@ -100,7 +114,9 @@ if __name__ == "__main__":
     while True:
         Client, address = ServerSocket.accept()
         print('Connected to: ' + address[0] + ':' + str(address[1]))
-        start_new_thread(thread_client,(Client, ))
+        verificar_mensagens.append(0)
+        lista_mensagens.append('')
+        start_new_thread(thread_client,(Client, ThreadCount,))
         ThreadCount += 1
         print('Thread Number: ' + str(ThreadCount))
     ServerSocket.close()
