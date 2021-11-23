@@ -21,15 +21,14 @@ porta_dest1=0
 porta_dest2=0
 
 mydb = mysql.connector.connect(
-  host='localhost',
+  host='127.0.0.1',
   user="root",
-  password="1234",
+  password="Pass1234!",
 )
 
 cur = mydb.cursor()
 
-cur.execute("CREATE DATABASE peer_table IF NOT EXIST")
-cur.execute("CREATE TABLE routing_table (ip_Dest VARCHAR(255),port VARCHAR(255), prox VARCHAR(255)")
+cur.execute("USE peer_table")
 
 
 def getTime():
@@ -172,7 +171,7 @@ def peerClient(ip_dest,porta_dest):
 def create_DB():
     cur.execute("INSERT INTO routing_table(ip_Dest, port) VALUES(%s,%s)",(ip_dest1,porta_dest1))
     cur.execute("INSERT INTO routing_table(ip_Dest, port) VALUES(%s,%s)",(ip_dest2,porta_dest2))
-    #mydb.commit()
+    mydb.commit()
 
 def update_DB():
     if (cur.execute("SELECT * FROM routing_table WHERE ip_Dest=%s",ip_disc)):
@@ -182,9 +181,6 @@ def update_DB():
 
 
 if __name__ == "__main__":
-
-    cur.execute("CREATE DATABASE peer_table IF NOT EXIST")
-    cur.execute("CREATE TABLE routing_table (ip_Dest VARCHAR(255),port VARCHAR(255), prox VARCHAR(255)")
 
     ip_dest1="192.3.4.6"
     ip_dest2="193.2.1.4"
