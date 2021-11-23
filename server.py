@@ -1,5 +1,5 @@
 import socket
-import os
+import random
 from _thread import *
 import time
 import ntplib
@@ -10,10 +10,14 @@ import mysql.connector
 host = '127.0.0.1'  # Standard loopback interface address (localhost)
 port = 9999     # Port to listen on (non-privileged ports are > 1023)
 
+#qnt de vizinhos atribuidos a peer
+N = 2
 variavel_broadcast = 0
 lista_mensagens = []
 verificar_mensagens = []
 lock = threading.Lock()
+N_thread = 0
+threadCount = 0
 
 #pass joao = Johnny1999@
 
@@ -66,7 +70,7 @@ def connection_ended(ip):
     return c_end
 
 #tpm 5
-def warning_con_end(ip):
+def starting_peer(ip):
     con_ended = bytearray(1)
     con_ended.append(5)
     array = ip.split(".")
@@ -75,9 +79,27 @@ def warning_con_end(ip):
         con_ended.append(int(array[a]))
 
 def add_peer_database(id,ip,porta):
-    
-    mycursor.execute("INSERT INTO peer(id,ip,porta) VALUES (%d,%s,%d)",(id,ip,porta))
+    mycursor.execute("INSERT INTO peer(id,ip,porta) VALUES (%s,%s,%s)",(id,ip,porta))
     mydb.commit()
+
+def atribuir_vizinhos(id):
+    numero_ids = []
+    if threadCount <= 1:
+        return numero_ids
+    elif threadCount == 2:
+        if id == 0:
+            return numero_ids.append(1)
+        else:
+            return numero_ids.append(0)
+    else:
+        for a in range(N):
+            b = random.randint(0,threadCount)
+            if b != id and b not in numero_ids:
+                numero_ids.append(b)
+            else: 
+                a = a - 1
+        return numero_ids
+            
 
 
 def thread_listening(connect, n_t):
@@ -118,7 +140,7 @@ def thread_client(connection,n_thread):
 if __name__ == "__main__":
     portas_peer = 5000
     ServerSocket = socket.socket()
-    ThreadCount = 0
+    #threadCount = 0
     #ServerSocket.setblocking(0)
     #ServerSocket.settimeout(4)
     try:
@@ -131,14 +153,14 @@ if __name__ == "__main__":
 
     while True:
         Client, address = ServerSocket.accept()
-        add_peer_database(ThreadCount, address[0], portas_peer)
+        add_peer_database(threadCount, address[0], portas_peer)
         
         print('Connected to: ' + address[0] + ':' + str(address[1]))
         verificar_mensagens.append(0)
         lista_mensagens.append('')
-        start_new_thread(thread_client,(Client, ThreadCount,))
-        ThreadCount += 1
+        start_new_thread(thread_client,(Client, threadCount,))
+        threadCount += 1
         portas_peer +=1
-        print('Thread Number: ' + str(ThreadCount))
+        print('Thread Number: ' + str(threadCount))
     ServerSocket.close()
     
