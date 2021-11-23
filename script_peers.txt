@@ -1,0 +1,10 @@
+DROP DATABASE IF EXISTS peer_table;
+CREATE DATABASE peer_table;
+USE peer_table;
+
+CREATE TABLE routing_table(
+    ip_Dest VARCHAR(15),
+    port VARCHAR(15), 
+    prox VARCHAR(15)
+);
+
