@@ -24,12 +24,12 @@ threadCount = 0
 mydb = mysql.connector.connect(
   host = "localhost",
   user = "root",
-  password = "Johnny1999@"
+  password = "Johnny1999@",
+  database = "server_database"
 )
 
 mycursor = mydb.cursor()
 
-mycursor.execute("USE server_database")
 
 
 def getTime():
@@ -38,15 +38,12 @@ def getTime():
     return response.tx_time
 
 #tpm = 3  
-def send_neighbors(ip,ip1,ip2,porta,porta1,porta2):
+def send_neighbors(porta,ip1,porta1,ip2,porta2):
     send = bytearray(1)
     send.append(3)
-    array = ip.split(".")
     array2 = ip1.split(".")
     array3 = ip2.split(".")
 
-    for a in range(len(array)):
-        send.append(int(array[a]))
     for b in range(len(array2)):
         send.append(int(array2[b]))
     for c in range(len(array3)):
@@ -84,13 +81,20 @@ def add_peer_database(id,ip,porta):
 
 def atribuir_vizinhos(id):
     numero_ids = []
-    if threadCount <= 1:
+    print(threadCount)
+    if threadCount == 1:
         return numero_ids
     elif threadCount == 2:
         if id == 0:
-            return numero_ids.append(1)
+            print("vou adicionar 1")
+            numero_ids.append(1)
+            print(numero_ids)
+            return numero_ids
         else:
-            return numero_ids.append(0)
+            print("vou adicionar 0")
+            numero_ids.append(0)
+            print(numero_ids)
+            return numero_ids
     else:
         for a in range(N):
             b = random.randint(0,threadCount)
@@ -99,8 +103,6 @@ def atribuir_vizinhos(id):
             else: 
                 a = a - 1
         return numero_ids
-            
-
 
 def thread_listening(connect, n_t):
     while True:
@@ -110,7 +112,7 @@ def thread_listening(connect, n_t):
         print(str(lista_mensagens[n_t]) + " numero: "+ str(n_t))
 
 
-def thread_client(connection,n_thread):
+def thread_client(connection,n_thread, listening_port):
     verificar_mensagens[n_thread] = 0
     start_new_thread(thread_listening,(connection, n_thread,))
     while True:
@@ -120,15 +122,40 @@ def thread_client(connection,n_thread):
             data = lista_mensagens[n_thread]
             if data[0] == 0:
                 print("tpm 0")
-                connection.send("ola".encode('utf-8'))
+                viz_ids = []
+                viz_ids = atribuir_vizinhos(n_thread)
+                print("vizinhos: "+ str(viz_ids))
+                if viz_ids is None:
+                    print("Esperar por mais conexões para iniciar rede overlay vizinhos")
+                else: 
+                    if threadCount == 2:
+                        #enviar apenas um vizinho, o 2 ip vai com 0.0.0.0 e porta a 0
+                        sql = "SELECT ip FROM peer WHERE id = "+str(viz_ids[0])+""
+                        mycursor.execute(sql)
+                        ip1 = mycursor.fetchall()
+                        print(ip1)
+                        sql = "SELECT porta FROM peer WHERE id = "+str(viz_ids[0])+""
+                        mycursor.execute(sql)
+                        porta = mycursor.fetchall()
+                        print(porta)
+                    else:
+                        sql = "SELECT ip FROM peer WHERE id = "+str(viz_ids[0])+""
+                        mycursor.execute(sql)
+                        ip1 = mycursor.fetchall()
+                        sql = "SELECT ip FROM peer WHERE id = "+str(viz_ids[1])+""
+                        mycursor.execute(sql)
+                        ip2 = mycursor.fetchall()
+                        print(ip2)
+
                 #connection.send(send_neighbors("120.20","121.1","122.2",5,4,3))
-                
+                connection.send("ola".encode('utf-8'))
             elif data[0] == 1:
                 print("tpm 1")
                 connection.send("ole".encode('utf-8'))
             verificar_mensagens[n_thread] = 0
+            print("passei aqui")
         #lock.release
-            
+         
         if variavel_broadcast == 1:
             #avisar que conectou
             connection.send('mudei esta variavel maltinha')
@@ -158,7 +185,7 @@ if __name__ == "__main__":
         print('Connected to: ' + address[0] + ':' + str(address[1]))
         verificar_mensagens.append(0)
         lista_mensagens.append('')
-        start_new_thread(thread_client,(Client, threadCount,))
+        start_new_thread(thread_client,(Client, threadCount,portas_peer,))
         threadCount += 1
         portas_peer +=1
         print('Thread Number: ' + str(threadCount))

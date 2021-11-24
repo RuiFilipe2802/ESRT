@@ -102,6 +102,7 @@ def serverComm():
         print(str(e))
     
     while True:
+        sleep(5)
         #Input = input('Say Something: ')
         packet = connect("192.168.58.25")
         ClientSocket.send(packet)
@@ -111,6 +112,7 @@ def serverComm():
         ClientSocket.send(packet)
         Response = ClientSocket.recv(1024)
         print(Response.decode('utf-8'))
+        
         sleep(2)
 
         '''if Response[0] == 3:
