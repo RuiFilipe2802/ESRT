@@ -38,21 +38,35 @@ def getTime():
     return response.tx_time
 
 #tpm = 3  
-def send_neighbors(porta,ip1,porta1,ip2,porta2):
+def send_neighbors(porta,n_peers,n_vizinhos,ip1,porta1,ip2,porta2):
     send = bytearray(1)
-    send.append(3)
+    send[0] = 3
+    #send.append(ip1.encode())
     array2 = ip1.split(".")
     array3 = ip2.split(".")
+    b_p = porta.to_bytes(2,'big')
+    for i in range(len(b_p)):
+        send.append(i)
+
+    send.append(n_peers)
+    send.append(n_vizinhos)
 
     for b in range(len(array2)):
         send.append(int(array2[b]))
+    
+    b_p1 = porta1.to_bytes(2,'big')
+    for i in range(len(b_p1)):
+        send.append(i)
+    
     for c in range(len(array3)):
         send.append(int(array3[c]))
 
-    #send.append((getTime()))
-    send.append((porta))
-    send.append((porta1))
-    send.append((porta2))
+    b_p2 = porta2.to_bytes(2,'big')
+    
+    for i in range(len(b_p2)):
+        send.append(i)
+
+    print(send)
     return send
 
 #tpm 4
@@ -82,9 +96,7 @@ def add_peer_database(id,ip,porta):
 def atribuir_vizinhos(id):
     numero_ids = []
     print(threadCount)
-    if threadCount == 1:
-        return numero_ids
-    elif threadCount == 2:
+    if threadCount == 2:
         if id == 0:
             print("vou adicionar 1")
             numero_ids.append(1)
@@ -107,9 +119,12 @@ def atribuir_vizinhos(id):
 def thread_listening(connect, n_t):
     while True:
         data = connect.recv(2048)
-        verificar_mensagens[n_t] = 1
-        lista_mensagens[n_t] = data
-        print(str(lista_mensagens[n_t]) + " numero: "+ str(n_t))
+        if threadCount == 1 and data[0] == 0:
+            print("enviar mensagem para esperar por peers")
+        else:
+            verificar_mensagens[n_t] = 1
+            lista_mensagens[n_t] = data
+            print(str(lista_mensagens[n_t]) + " numero: "+ str(n_t))
 
 
 def thread_client(connection,n_thread, listening_port):
@@ -132,23 +147,43 @@ def thread_client(connection,n_thread, listening_port):
                         #enviar apenas um vizinho, o 2 ip vai com 0.0.0.0 e porta a 0
                         sql = "SELECT ip FROM peer WHERE id = "+str(viz_ids[0])+""
                         mycursor.execute(sql)
-                        ip1 = mycursor.fetchall()
+                        aux = mycursor.fetchall()
+                        aux1 = str(aux[0])
+                        ip1 = aux1.strip("[").strip("(").strip("'").strip(")").strip("]").strip(",").strip("'")
                         print(ip1)
                         sql = "SELECT porta FROM peer WHERE id = "+str(viz_ids[0])+""
                         mycursor.execute(sql)
-                        porta = mycursor.fetchall()
+                        aux = mycursor.fetchall()
+                        aux1 = str(aux[0])
+                        porta = int(aux1.strip("[").strip("(").strip("'").strip(")").strip("]").strip(","))
                         print(porta)
+                        packet = send_neighbors(listening_port,threadCount,1, ip1, porta, '0', 0)
                     else:
                         sql = "SELECT ip FROM peer WHERE id = "+str(viz_ids[0])+""
                         mycursor.execute(sql)
-                        ip1 = mycursor.fetchall()
-                        sql = "SELECT ip FROM peer WHERE id = "+str(viz_ids[1])+""
+                        aux = mycursor.fetchall()
+                        aux1 = str(aux[0])
+                        ip1 = aux1.strip("[").strip("(").strip("'").strip(")").strip("]").strip(",").strip("'")
+                        print(ip1)
+                        sql = "SELECT ip FROM peer WHERE id = "+str(viz_ids[0])+""
                         mycursor.execute(sql)
-                        ip2 = mycursor.fetchall()
-                        print(ip2)
+                        aux = mycursor.fetchall()
+                        aux1 = str(aux[0])
+                        ip2 = aux1.strip("[").strip("(").strip("'").strip(")").strip("]").strip(",").strip("'")
+                        sql = "SELECT porta FROM peer WHERE id = "+str(viz_ids[0])+""
+                        mycursor.execute(sql)
+                        aux = mycursor.fetchall()
+                        aux1 = str(aux[0])
+                        porta1 = int(aux1.strip("[").strip("(").strip(")").strip("]").strip(","))
+                        sql = "SELECT porta FROM peer WHERE id = "+str(viz_ids[0])+""
+                        mycursor.execute(sql)
+                        aux = mycursor.fetchall()
+                        aux1 = str(aux[0])
+                        porta2 = int(aux1.strip("[").strip("(").strip(")").strip("]").strip(","))
+                        packet = send_neighbors(listening_port,threadCount,N, ip1, porta1,ip2,porta2)
 
                 #connection.send(send_neighbors("120.20","121.1","122.2",5,4,3))
-                connection.send("ola".encode('utf-8'))
+                connection.send(packet)
             elif data[0] == 1:
                 print("tpm 1")
                 connection.send("ole".encode('utf-8'))
@@ -166,6 +201,7 @@ def thread_client(connection,n_thread, listening_port):
 
 if __name__ == "__main__":
     portas_peer = 5000
+    
     ServerSocket = socket.socket()
     #threadCount = 0
     #ServerSocket.setblocking(0)

@@ -107,7 +107,7 @@ def serverComm():
         packet = connect("192.168.58.25")
         ClientSocket.send(packet)
         Response = ClientSocket.recv(1024)
-        print(Response.decode('utf-8'))
+        print(Response)
         packet = disconnect("192.168.58.25")
         ClientSocket.send(packet)
         Response = ClientSocket.recv(1024)
