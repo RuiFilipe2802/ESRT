@@ -120,7 +120,7 @@ def thread_listening(connect, n_t):
     while True:
         data = connect.recv(2048)
         if threadCount == 1 and data[0] == 0:
-            print("enviar mensagem para esperar por peers")
+            connect.send(b'-1')
         else:
             verificar_mensagens[n_t] = 1
             lista_mensagens[n_t] = data
