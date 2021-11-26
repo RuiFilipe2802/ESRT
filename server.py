@@ -83,14 +83,15 @@ def connection_ended(ip):
 #tpm 5
 def starting_peer(ip):
     con_ended = bytearray(1)
-    con_ended.append(5)
+    con_ended[0] = 5
     array = ip.split(".")
 
     for a in range(len(array)):
         con_ended.append(int(array[a]))
 
-def add_peer_database(id,ip,porta):
-    mycursor.execute("INSERT INTO peer(id,ip,porta) VALUES (%s,%s,%s)",(id,ip,porta))
+
+def add_peer_database(id,ip,porta,status):
+    mycursor.execute("INSERT INTO peer(id,ip,porta,status) VALUES (%s,%s,%s,%s)",(id,ip,porta,status))
     mydb.commit()
 
 def atribuir_vizinhos(id):
@@ -216,7 +217,7 @@ if __name__ == "__main__":
 
     while True:
         Client, address = ServerSocket.accept()
-        add_peer_database(threadCount, address[0], portas_peer)
+        add_peer_database(threadCount, address[0], portas_peer, 0)
         
         print('Connected to: ' + address[0] + ':' + str(address[1]))
         verificar_mensagens.append(0)

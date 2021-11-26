@@ -5,6 +5,8 @@ USE server_database;
 CREATE TABLE peer(
     id int PRIMARY KEY,
     ip varchar(15),
-    porta int
+    porta int,
+    status int
 );
+
 
