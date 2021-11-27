@@ -1019,12 +1019,13 @@ node n18 {
     iconcoords {263.0 103.0}
     labelcoords {237.0 97.0}
     interface-peer {eth0 n23}
-    services {DefaultRoute UserDefined}
+    services {DefaultRoute}
     custom-config {
 	custom-config-id service:UserDefined
 	custom-command UserDefined
 	config {
-	cmdup=('chmod +x dnsEnabled.sh', 'sudo ./dnsEnabled.sh', )
+	dirs=('/etc', )
+	cmdup=('chmod +x /home/rui/Desktop/dnsEnabled.sh', 'sudo /home/rui/Desktop/./dnsEnabled', )
 	}
     }
 }
