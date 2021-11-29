@@ -126,11 +126,11 @@ def dijkstra(aGraph, start):
             if new_dist < next.get_distance():
                 next.set_distance(new_dist)
                 next.set_previous(current)
-                print ('updated : current = %s next = %s new_dist = %s' \
-                        %(current.get_id(), next.get_id(), next.get_distance()))
-            else:
-                print ('not updated : current = %s next = %s new_dist = %s' \
-                        %(current.get_id(), next.get_id(), next.get_distance()))
+                #print ('updated : current = %s next = %s new_dist = %s' \
+                #        %(current.get_id(), next.get_id(), next.get_distance()))
+            #else:
+                #print ('not updated : current = %s next = %s new_dist = %s' \
+                #        %(current.get_id(), next.get_id(), next.get_distance()))
 
         # Rebuild heap
         # 1. Pop every item
@@ -145,57 +145,50 @@ if __name__ == '__main__':
 
     g = Graph()
 
-    g.add_vertex('a')
-    g.add_vertex('b')
-    g.add_vertex('c')
-    g.add_vertex('d')
-    g.add_vertex('e')
-    g.add_vertex('f')
+    g.add_vertex('10.0.0.1')
+    g.add_vertex('10.0.0.2')
+    g.add_vertex('10.0.0.3')
+    g.add_vertex('10.0.0.4')
+    g.add_vertex('10.0.0.5')
+    g.add_vertex('10.0.0.6')
 
-    g.add_edge('a', 'b', 2)  
-    g.add_edge('a', 'c', 4)
-    g.add_edge('a', 'f', 10)
-    g.add_edge('b', 'c', 3)
-    g.add_edge('b', 'd', 4)
-    g.add_edge('c', 'e', 1)
-    g.add_edge('d', 'e', 5)
-    g.add_edge('d', 'f', 1)
+    g.add_edge('10.0.0.1', '10.0.0.2', 2)  
+    g.add_edge('10.0.0.1', '10.0.0.3', 4)
+    g.add_edge('10.0.0.1', '10.0.0.6', 10)
+    g.add_edge('10.0.0.2', '10.0.0.3', 3)
+    g.add_edge('10.0.0.2', '10.0.0.4', 4)
+    g.add_edge('10.0.0.3', '10.0.0.5', 1)
+    g.add_edge('10.0.0.4', '10.0.0.5', 5)
+    g.add_edge('10.0.0.4', '10.0.0.6', 1)
     
-    arraysOfnodes = ['a','b','c','d','e','f']
+    arraysOfnodes = ['10.0.0.1','10.0.0.2','10.0.0.3','10.0.0.4','10.0.0.5','10.0.0.6']
 
-    array_topo = (['a', 'b', 2],
-                  ['a', 'c', 4],
-                  ['a', 'f', 10,
-                  ['b', 'c', 3],
-                  ['b', 'd', 4],
-                  ['c', 'e', 1],
-                  ['d', 'e', 5],
-                  ['d', 'f', 1]])
-    print(array_topo)
+    array_topo = (['10.0.0.1', '10.0.0.2', 2],
+                  ['10.0.0.1', '10.0.0.3', 4],
+                  ['10.0.0.1', '10.0.0.6', 10],
+                  ['10.0.0.2', '10.0.0.3', 3],
+                  ['10.0.0.2', '10.0.0.4', 4],
+                  ['10.0.0.3', '10.0.0.5', 1],
+                  ['10.0.0.4', '10.0.0.5', 5],
+                  ['10.0.0.4', '10.0.0.6', 1])
+    #print(array_topo)
 
-    print ('Graph data:')
-    for v in g:
-        for w in v.get_connections():
-            vid = v.get_id()
-            wid = w.get_id()
-            print ('( %s , %s, %3d)'  % ( vid, wid, v.get_weight(w)))
+    #print ('Graph data:')
+    #for v in g:
+    #    for w in v.get_connections():
+    #        vid = v.get_id()
+    #        wid = w.get_id()
+    #       print ('( %s , %s, %3d)'  % ( vid, wid, v.get_weight(w)))
     y = 0
     for x in arraysOfnodes:            
         dijkstra(g, g.get_vertex(arraysOfnodes[0])) 
         target = g.get_vertex(arraysOfnodes[y])
-        y = y +1
         path = [target.get_id()]
         shortest(target, path)      
-        print ('The shortest path : %s' %(path[::-1]))
+        print ('The shortest path to '+arraysOfnodes[y]+' : %s' %(path[::-1]))
         print ('Next hop : %s' %(path[len(path)-2]))
-        x = 0
-        y = 0
-        k = 0
-        for x in array_topo:
-            if(arraysOfnodes[0]==array_topo[x][y][k]):
-                for y in array_topo:
-                    if(path[len(path)-2] == array_topo[x][y][k]):
-                        print ('Cost : '+array_topo[x][y][k])
+        y = y +1
+
 
 
                         
