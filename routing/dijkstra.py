@@ -1,6 +1,8 @@
 #https://www.bogotobogo.com/python/python_Dijkstras_Shortest_Path_Algorithm.php
 import sys
 from functools import total_ordering
+import numpy as np
+
 
 @total_ordering
 class Vertex:
@@ -140,55 +142,83 @@ def dijkstra(aGraph, start):
         unvisited_queue = [(v.get_distance(),v) for v in aGraph if not v.visited]
         heapq.heapify(unvisited_queue)
 
-
-if __name__ == '__main__':
+def routing_table_calculation(array_topologia, node):
+       
+    nodesArray = [0]
+    l = 0
+    k = 0
+    t = 0
+    igual = 0
+    
+    for x in array_topologia:
+        while k < len(nodesArray):
+            if( array_topologia[t][0] == nodesArray[k] or array_topologia[t][1] == nodesArray[k]):
+                igual = 1
+            k += 1
+            #print(k)
+        if(igual == 0):
+            nodesArray.append(array_topologia[t][0])
+            #print(nodesArray)
+        igual = 0
+        k  = 0
+        t += 1
+    
+    l = 0
+    k = 0
+    t = 0
+    igual = 0
+    
+    for x in array_topologia:
+        while k < len(nodesArray):
+            if(array_topologia[t][1] == nodesArray[k]):
+                igual = 1
+            k += 1
+            #print(k)
+        if(igual == 0):
+            nodesArray.append(array_topologia[t][1])
+            #print(nodesArray)
+        igual = 0
+        k  = 0
+        t += 1
+        
+    nodesArray.remove(0)
+    #print(nodesArray)
 
     g = Graph()
 
-    g.add_vertex('10.0.0.1')
-    g.add_vertex('10.0.0.2')
-    g.add_vertex('10.0.0.3')
-    g.add_vertex('10.0.0.4')
-    g.add_vertex('10.0.0.5')
-    g.add_vertex('10.0.0.6')
-
-    g.add_edge('10.0.0.1', '10.0.0.2', 2)  
-    g.add_edge('10.0.0.1', '10.0.0.3', 4)
-    g.add_edge('10.0.0.1', '10.0.0.6', 10)
-    g.add_edge('10.0.0.2', '10.0.0.3', 3)
-    g.add_edge('10.0.0.2', '10.0.0.4', 4)
-    g.add_edge('10.0.0.3', '10.0.0.5', 1)
-    g.add_edge('10.0.0.4', '10.0.0.5', 5)
-    g.add_edge('10.0.0.4', '10.0.0.6', 1)
-    
-    arraysOfnodes = ['10.0.0.1','10.0.0.2','10.0.0.3','10.0.0.4','10.0.0.5','10.0.0.6']
-
-    array_topo = (['10.0.0.1', '10.0.0.2', 2],
-                  ['10.0.0.1', '10.0.0.3', 4],
-                  ['10.0.0.1', '10.0.0.6', 10],
-                  ['10.0.0.2', '10.0.0.3', 3],
-                  ['10.0.0.2', '10.0.0.4', 4],
-                  ['10.0.0.3', '10.0.0.5', 1],
-                  ['10.0.0.4', '10.0.0.5', 5],
-                  ['10.0.0.4', '10.0.0.6', 1])
-    #print(array_topo)
-
+    l = 0
+    for x in nodesArray:
+        g.add_vertex(nodesArray[l])
+        l +=1
+    l = 0
+    for x in array_topologia:
+        g.add_edge(array_topologia[l][0],array_topologia[l][1],array_topologia[l][2])
+        l +=1
+    #nodesArray = ['10.0.0.1','10.0.0.2','10.0.0.3','10.0.0.4','10.0.0.5','10.0.0.6']
+    routing_table =[ [ 0 for i in range(2) ] for j in range(len(nodesArray)) ]
     #print ('Graph data:')
-    #for v in g:
-    #    for w in v.get_connections():
-    #        vid = v.get_id()
-    #        wid = w.get_id()
-    #       print ('( %s , %s, %3d)'  % ( vid, wid, v.get_weight(w)))
+    for v in g:
+        for w in v.get_connections():
+            vid = v.get_id()
+            wid = w.get_id()
+           # print ('( %s , %s, %3d)'  % ( vid, wid, v.get_weight(w)))
     y = 0
-    for x in arraysOfnodes:            
-        dijkstra(g, g.get_vertex(arraysOfnodes[0])) 
-        target = g.get_vertex(arraysOfnodes[y])
+    z = 0
+    k = 0
+    for x in nodesArray:            
+        dijkstra(g, g.get_vertex(node)) 
+        target = g.get_vertex(nodesArray[y])
         path = [target.get_id()]
         shortest(target, path)      
-        print ('The shortest path to '+arraysOfnodes[y]+' : %s' %(path[::-1]))
-        print ('Next hop : %s' %(path[len(path)-2]))
+        #print ('The shortest path to '+arraysOfnodes[y]+' : %s' %(path[::-1]))
+        #print ('Next hop : %s' %(path[len(path)-2]))
+        routing_table[z][k] = nodesArray[y]
+        routing_table[z][k + 1] = path[(len(path)-2)]
+        k = 0
+        z = z + 1
         y = y +1
 
+    return routing_table
 
 
                         
