@@ -20,14 +20,6 @@ porta_source=0
 porta_dest1=0
 porta_dest2=0
 
-mydb = mysql.connector.connect(
-  host='127.0.0.1',
-  user="root",
-  password="Pass1234!",
-)
-
-cur = mydb.cursor()
-cur.execute("USE peer_table")
 
 
 def getTime():
@@ -118,19 +110,12 @@ def serverComm():
             for c in range(Response[9:12]):
                 ip_dest2.join(c.join("."))
 
-            for d in range(Response[13:14]):
-                porta_source.join(d)
-
-            for e in range(Response[15:16]):
-                porta_dest1.join(e)
-
-            for f in range(Response[17:18]):
-                porta_dest2.join(f)
-
         
         if Response[0]==4:
             for a in range(Response[1:4]):
                 ip_disc.join(a.join("."))
+
+        
             
     ClientSocket.close()
 
@@ -167,16 +152,6 @@ def peerClient(ip_dest,porta_dest):
             print ('Error Code : ' + str(msg[0]) + ' Message ' + msg[1])
             sys.exit()  
 
-def create_DB():
-    cur.execute("INSERT INTO routing_table(ip_Dest, port) VALUES(%s,%s)",(ip_dest1,porta_dest1))
-    cur.execute("INSERT INTO routing_table(ip_Dest, port) VALUES(%s,%s)",(ip_dest2,porta_dest2))
-    mydb.commit()
-
-def update_DB():
-    if (cur.execute("SELECT * FROM routing_table WHERE ip_Dest=%s",ip_disc)):
-        cur.execute("DELETE FROM routing_table WHERE ip_Dest=%s",ip_disc)
-        mydb.commit()
-
 
 
 if __name__ == "__main__":
@@ -185,9 +160,6 @@ if __name__ == "__main__":
     ip_dest2="193.2.1.4"
     porta_dest1=4000
     porta_dest2=5000
-    create_DB()
-    for x in cur:
-        print(x)
     
     #_thread.start_new_thread(serverComm,())
     
