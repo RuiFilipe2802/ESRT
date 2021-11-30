@@ -9,7 +9,11 @@ import sys
 import os
 import struct
 
-ip_neighbours = ["10.0.0.1","10.0.0.2"]
+from testes_do_rui import disconnect
+
+neighbours = {}
+ip_neighbours = []
+cost_neighbours = []
 
 def timeCalc(ip):
     now = datetime.now()
@@ -39,6 +43,7 @@ def getNeighbours(res):
         array4 = res[2+contador:6+contador]
         if(array4 is not ip_neighbours):
             ip_neighbours.append(socket.inet_ntoa(array4))
+            neighbours['ip_Neighbour'] = socket.inet_ntoa(array4)
             contador += 4
             counter += 1
     return ip_neighbours
@@ -79,8 +84,10 @@ if __name__ == "__main__":
     numero = inteiro + float(str(aux))
     timestamp= datetime.fromtimestamp(numero)
     print(timestamp)'''
-    ip_src = '10.0.0.1'
-
+    
+    ip_src = '10.0.0.5'
+    ip_neighbours.append('10.0.0.5')
+    ip_neighbours.append('10.0.0.3')
     boas = timeCalc(ip_src)
     time = getTimeStampFromPacket(boas)
     tempo1 = datetime.fromtimestamp(time)
@@ -114,14 +121,23 @@ if __name__ == "__main__":
         print(sendCost[z])
         z += 1
 
-    buf2 = struct.unpack('>f', buf)
+    ipReceived = sendCost[1:5]
+    ip_rec = socket.inet_ntoa(ipReceived)
+    inteiro = int.from_bytes(sendCost[5:9], byteorder='big')
+    buf2 = struct.unpack('>f', sendCost[9:])
     aux = str(buf2).strip('(').strip(')').strip(',')
     numero = inteiro + float(str(aux))
     timestamp = datetime.fromtimestamp(numero)
-    print(numero)
+    neighbours[ip_rec] = numero
+    ip_rec = '10.0.0.3'
+    numero = 2.455454
+    neighbours[ip_rec] = numero
+    print(neighbours)
+    c = 0
+    for a in ip_neighbours:
+        print(neighbours[ip_neighbours[c]])
+        c+=1
 
-    for ip in ip_neighbours:
-                print(ip)
 
     while(1):            
         pass

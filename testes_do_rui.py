@@ -19,6 +19,7 @@ ip_source=""
 ip_disc=""
 
 #   Global Variables
+neighbours = {}         #   Dictinoary(IP:Cost)
 ip_neighbours = []      #   IP Neighbours
 costNeighbours = []     #   Cost Nieghbours
 
@@ -86,8 +87,16 @@ def sendCosts(ip):
         arrayIpDest = arrayDest.split(".")
         for b in range(len(array)):
             send.append(int(arrayIpDest[b]))        #   IP DEST
-        
-        
+        custo = neighbours[ip_neighbours[x]]
+        timeStamp = custo
+        inteiro = int(timeStamp)
+        decimal = timeStamp - inteiro
+        b_p = inteiro.to_bytes(4,'big')
+        for i in range(len(b_p)):
+            send.append(b_p[i])                     #   CUSTO (INT)
+        buf = bytearray(struct.pack('>f', decimal))
+        for a in range(len(buf)):
+            send.append(buf[a])                     #   CUSTO (FLOAT)
         x += 1
     return send
 
@@ -137,7 +146,6 @@ def sendConnectionCost(ip_src,cost):
     for i in range(len(b_p)):
         sendCost.append(b_p[i])
     buf = bytearray(struct.pack('>f', decimal))
-    #timeCal[0] = (0b110)
     for a in range(len(buf)):
         sendCost.append(buf[a])
     return sendCost
@@ -161,18 +169,17 @@ def serverComm():
         print(str(e))
     ipOrigin = ClientSocket.getsockname()[0]
     ip_source = ipOrigin
-    _thread.start_new_thread(peerListener,(ip_source))
+    _thread.start_new_thread(peerListener,(ip_source,))
 
     enviar = 0 
-    res = 0
-
     while True:
+        res = ClientSocket.recv(1024)
+        print(res.decode('utf-8'))
+
         if(enviar == 1):            # CONNECT
             print('CONNECT')
             packet = connect(ipOrigin)
             ClientSocket.send(packet)
-            res = ClientSocket.recv(1024)
-            print(res.decode('utf-8'))
         elif(enviar == 2):          # DISCONNECT 
             print('DISCONNECT')
             packet = disconnect(ipOrigin)
@@ -227,8 +234,14 @@ def peerListener(ip_src):
             socketEnvio.sendto(sendCusto,(ip_dest,5000))
 
         elif(data[0] == 30):           # RECEIVE COST AND STORE 
-            
-            print('ola')
+            ipReceived = data[1:5]
+            ip_rec = socket.inet_ntoa(ipReceived)
+            inteiro = int.from_bytes(data[5:9], byteorder='big')
+            buf2 = struct.unpack('>f', data[9:])
+            aux = str(buf2).strip('(').strip(')').strip(',')
+            numero = inteiro + float(str(aux))
+            timestamp = datetime.fromtimestamp(numero)
+            neighbours[ip_rec] = numero
             
 
 if __name__ == "__main__":
