@@ -76,14 +76,21 @@ def error(ip):
 #tpm = 6
 def timeCalc(ip):
     now = datetime.now()
-    timeStamp = float(now.utcnow().timestamp())
-    buf = bytearray(struct.pack('f', timeStamp))
+    timeStamp = float(now.timestamp())
+    inteiro = int(timeStamp)
+    decimal = timeStamp - inteiro
     timeCal = bytearray(1)
-    timeCal[0] = (0b110)
+    timeCal[0] = 10
     array = ip.split(".")
-    for a in range(len(array)):
-        timeCal.append(int(array[a]))
-    timeCal.extend(buf)
+    for b in range(len(array)):
+        timeCal.append(int(array[b]))
+    b_p = inteiro.to_bytes(4,'big')
+    for i in range(len(b_p)):
+        timeCal.append(b_p[i])
+    buf = bytearray(struct.pack('>f', decimal))
+    #timeCal[0] = (0b110)
+    for a in range(len(buf)):
+        timeCal.append(buf[a])
     return timeCal
 
 def serverComm():
@@ -148,7 +155,13 @@ def peerListener(ip_src):
     while 1:
         data, addr = s.recvfrom(1024)
         if(data[0] == 30):            # RECEBE O CUSTO
-            array = data[1:5]
+                inteiro = int.from_bytes(data[:4],'big')
+                timestamp = data[4:]
+                buf = struct.unpack('>f', timestamp)
+                aux = str(buf).strip('(').strip(')').strip(',')
+                numero = inteiro + float(str(aux))
+                timestamp= datetime.fromtimestamp(numero)
+                print(timestamp)
             
         elif(data[0] == 31):          # SEND NORMAL DATA
             print('DATA')

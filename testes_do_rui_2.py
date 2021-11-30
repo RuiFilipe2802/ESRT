@@ -223,38 +223,34 @@ def ola(ip):
         print("ola")
         print(ip)
 
-def timeCalc():
+def timeCalc(ip):
     now = datetime.now()
     timeStamp = float(now.timestamp())
     inteiro = int(timeStamp)
     decimal = timeStamp - inteiro
-    print(decimal)
-    print(inteiro)
-    timeCal = bytearray(0)
+    timeCal = bytearray(1)
+    timeCal[0] = 10
+    array2 = ip.split(".")
+    for b in range(len(array2)):
+        timeCal.append(int(array2[b]))
     b_p = inteiro.to_bytes(4,'big')
     for i in range(len(b_p)):
         timeCal.append(b_p[i])
     buf = bytearray(struct.pack('>f', decimal))
     #timeCal[0] = (0b110)
-    print('pacote')
     for a in range(len(buf)):
         timeCal.append(buf[a])
     return timeCal
 
 if __name__ == "__main__":
     
-    packet = timeCalc()
-    print(len(packet))
-    inteiro = int.from_bytes(packet[:4],'big')
-    print(inteiro)
-    timestamp = packet[4:]
+    packet = timeCalc('10.0.0.1')
+    inteiro = int.from_bytes(packet[5:9],'big')
+    timestamp = packet[9:]
     buf = struct.unpack('>f', timestamp)
-    print(buf)
     aux = str(buf).strip('(').strip(')').strip(',')
-    print(aux)
     numero = inteiro + float(str(aux))
-    print(numero)
-    timestamp= datetime.fromtimestamp(numero).strftime("%S")
+    timestamp= datetime.fromtimestamp(numero)
     print(timestamp)
 
 
