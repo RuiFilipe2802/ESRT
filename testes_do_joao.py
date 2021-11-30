@@ -15,6 +15,8 @@ ip_source=""
 ip_dest1=""
 ip_dest2=""
 ip_disc=""
+
+
             
 porta_source=0
 porta_dest1=0
@@ -39,8 +41,8 @@ def getTime():
     
 #tpm = 0
 def connect(ip):
-    con = bytearray(1)
-    con[0] = (0b0)
+    con = bytearray(0)
+    con.append(0)
     array = ip.split(".")
     for a in range(len(array)):
         con.append(int(array[a]))
@@ -51,8 +53,8 @@ def connect(ip):
 
 #tpm = 1
 def disconnect(ip):
-    dis = bytearray(1)
-    dis[0]=(0b1)
+    dis = bytearray(0)
+    dis.append(1)
     array = ip.split(".")
 
     for a in range(len(array)):
@@ -82,6 +84,27 @@ def package_interpretation(Response):
         porta_dest1=Response[15:16]
         porta_dest2=Response[17:18]
 
+def sendCosts(ip):
+    ip_neighbours = ["127.10.10.1","127.0.0.1"]
+    send = bytearray(1)
+    send[0] = 3
+    send.append(len(ip_neighbours))
+    x = 0
+    while(x < len(ip_neighbours)):
+        array = ip.split(".")
+        for a in range(len(array)):
+            send.append(int(array[a]))              #   IP ORIG
+        arrayDest = ip_neighbours[x]
+        arrayIpDest = arrayDest.split(".")
+        for b in range(len(array)):
+            send.append(int(arrayIpDest[b]))
+        for a in range(8):
+            send.append(a)        #   IP DEST
+        x += 1
+    print(send)
+    print(len(send))
+    return send
+
 
 def serverComm():
 
@@ -91,20 +114,32 @@ def serverComm():
         ClientSocket.connect((host, port))
     except socket.error as e:
         print(str(e))
-    
+    aux = True
     while True:
-        sleep(5)
+        
         #Input = input('Say Something: ')
         packet = connect("192.168.58.25")
+        print("con")
+        print(packet)
         ClientSocket.send(packet)
         Response = ClientSocket.recv(1024)
         print(Response)
-        packet = disconnect("192.168.58.25")
-        ClientSocket.send(packet)
-        Response = ClientSocket.recv(1024)
-        print(Response.decode('utf-8'))
-        
-        sleep(2)
+        if Response == b'-1':
+            print("waiting")
+        else:
+            packet = sendCosts("192.168.58.25")
+            print("encam")
+            print(packet)
+            ClientSocket.send(packet)
+            Response = ClientSocket.recv(1024)
+            if Response.decode('utf-8') == "wait":
+                packet = sendCosts("192.168.58.25")
+                print("encam2")
+                print(packet)
+                ClientSocket.send(packet)
+                Response = ClientSocket.recv(1024)
+            
+        sleep(5)
             
             
     ClientSocket.close()

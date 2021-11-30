@@ -93,6 +93,14 @@ class Graph:
 
     def get_previous(self, current):
         return self.previous
+    
+    def print_graph(self):
+        for v in self:
+            for w in v.get_connections():
+                vid = v.get_id()
+                wid = w.get_id()
+                print ('( %s , %s, %3d)'  % ( vid, wid, v.get_weight(w))) 
+
 
 def shortest(v, path):
     ''' make shortest path from v.previous'''
