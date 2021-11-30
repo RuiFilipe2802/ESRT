@@ -9,39 +9,21 @@ import sys
 import os
 import struct
 
-host = '127.0.0.1'  # Standard loopback interface address (localhost)
-port = 9999      # Port to listen on (non-privileged ports are > 1023)
-port2 = 5000
+PORT = 5000
 
+#   Conf
+HOST = '127.0.0.1'  # Standard loopback interface address (localhost)
+PORT_TCP = 9999         # Port to listen on (non-privileged ports are > 1023)
+PORT_UDP = 5000
+
+#   IP Addresses
 ip_source=""
-ip_dest1=""
-ip_dest2=""
 ip_disc=""
-            
-porta_source=5005
-porta_dest1=0
-porta_dest2=0
 
-ip_dest1="10.0.6.2"
-porta_dest1 = 5001
+#   Variáveis globais partilhadas
+sendToNeighbours = 0
 
-'''mydb = mysql.connector.connect(
-  host='localhost',
-  user="root",
-  password="1234",
-)
-
-cur = mydb.cursor()
-
-cur.execute("CREATE DATABASE peer_table IF NOT EXIST")
-cur.execute("CREATE TABLE routing_table (ip_Dest VARCHAR(255),port VARCHAR(255), prox VARCHAR(255)")
-'''
-
-def getTime():
-    c = ntplib.NTPClient()
-    response = c.request('pool.ntp.org', version=3)
-    return ctime(int(response.recv_time))
-
+#   Set time according to NTP Server
 def setTime():
     c = ntplib.NTPClient() 
     response = c.request ('pool.ntp.org') 
@@ -50,183 +32,148 @@ def setTime():
     os.system('date --set='+_date)
     _time = time.strftime('%H:%M:%S', time.localtime(ts))
     t = datetime.fromtimestamp(response.orig_time) 
-    #_time = t.strftime("%H:%M:%S.%f")
     os.system('date +%T -s "'+_time+'"')
-    #os.system('date +%FT%T.%3N')
     
-#tpm = 0
+#   Connect Peer-Server TYPE 0
 def connect(ip):
+    now = datetime.now()
     con = bytearray(1)
     con[0] = (0b0)
     array = ip.split(".")
     for a in range(len(array)):
         con.append(int(array[a]))
-    #con.append(getTime())
-    #print(con.decode)
+    timeStamp = float(now.utcnow().timestamp())
+    buf = bytearray(struct.pack('f', timeStamp))
+    con.extend(buf)
     return con
 
-#tpm = 1
+#   Disconnect Peer-Server TYPE 1 
 def disconnect(ip):
+    now = datetime.now()
     dis = bytearray(1)
     dis[0]=(0b1)
     array = ip.split(".")
     for a in range(len(array)):
         dis.append(int(array[a]))
-    #dis.append(getTime())
+    timeStamp = float(now.utcnow().timestamp())
+    buf = bytearray(struct.pack('f', timeStamp))
+    dis.extend(buf)
     return dis
 
 #tpm = 2
 def error(ip):
+    now = datetime.now()
     err = bytearray(1)
     err.append(0b10)
     array = ip.split(".")
     for a in range(len(array)):
         err.append(int(array[a]))
-    err.append(getTime())
+    timeStamp = float(now.utcnow().timestamp())
+    buf = bytearray(struct.pack('f', timeStamp))
+    err.extend(buf)
     return err
-
-def package_interpretation(response):
-    if response[0] == 3:
-        for a in range(len(response[1:4])):
-            ip_source=a.join(".")
-        for b in range(len(response[5:8])):
-            ip_dest1=b.join(".")
-        for c in range(len(response[9:12])):
-            ip_dest2=c.join(".")
-        porta_source=response[13:14]
-        porta_dest1=response[15:16]
-        porta_dest2=response[17:18]
-  
-#tpm = 4
-def clock_adj(ip):
-    c_adj = bytearray(1)
-    c_adj.append(0b100)
-    array = ip.split(".")
-    for a in range(len(array)):
-        c_adj.append(int(array[a]))
-    c_adj.append(getTime())
-    return c_adj
 
 #tpm = 6
 def timeCalc(ip):
     now = datetime.now()
     timeStamp = float(now.utcnow().timestamp())
     buf = bytearray(struct.pack('f', timeStamp))
-    con = bytearray(1)
-    con[0] = (0b110)
+    timeCal = bytearray(1)
+    timeCal[0] = (0b110)
     array = ip.split(".")
     for a in range(len(array)):
-        con.append(int(array[a]))
-    con.extend(buf)
-    print(con)
-    print("-------------------------------")
-    return con
+        timeCal.append(int(array[a]))
+    timeCal.extend(buf)
+    return timeCal
 
 def serverComm():
-    ClientSocket = socket.socket()
+    ClientSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     print('Waiting for connection')
     try:
-        ClientSocket.connect((host, port))
+        ClientSocket.connect((HOST, PORT_TCP))
     except socket.error as e:
         print(str(e))
     ipOrigin = ClientSocket.getsockname()[0]
     ip_source = ipOrigin
 
-    _thread.start_new_thread(peerServer,(ip_source,porta_source))
-    _thread.start_new_thread(peerClient,(ip_dest1,porta_dest1))
-    #_thread.start_new_thread(peerClient,(ip_dest2,porta_dest2))
+    _thread.start_new_thread(peerListener,(ip_source))
+
+    enviar = 0 
+    res = 0
+
+    ip_neighbours = []
 
     while True:
-        #Input = input('Say Something: ')
-        packet = connect(ipOrigin)
-        ClientSocket.send(packet)
-        Response = ClientSocket.recv(1024)
-        print(Response.decode('utf-8'))
-        packet = disconnect(ipOrigin)
-        ClientSocket.send(packet)
+        if(enviar == 0):            # CONNECT
+            print('CONNECT')
+            packet = connect(ipOrigin)
+            ClientSocket.send(packet)
+            res = ClientSocket.recv(1024)
+            print(res.decode('utf-8'))
+        elif(enviar == 1):          # DISCONNECT 
+            print('DISCONNECT')
+            packet = disconnect(ipOrigin)
+            ClientSocket.send(packet)
+        elif(enviar == 2):          # ERROR
+            print('ERROR')
+            packet = error(ipOrigin)
+            ClientSocket.send(packet)
+        
+        if(res[0] == 10):          # Get Neighbours
+            nNeighbours = res[1]
+            counter = 0
+            contador = 0
+            while(counter < nNeighbours):
+                array4 = res[2+contador:6+contador]
+                if(array4 is not ip_neighbours):
+                    ip_neighbours.append(socket.inet_ntoa(array4))
+                    contador += 4
+                    counter += 1
+                    _thread.start_new_thread(peerSender,(ip_neighbours[counter],))
+
+            global sendToNeighbours
+            sendToNeighbours = 1
+
         Response = ClientSocket.recv(1024)
         print(Response.decode('utf-8'))
         sleep(2)
-
-        '''if Response[0] == 3:
-            for a in range(Response[1:4]):
-                ip_source.join(a.join("."))
-            for b in range(Response[5:8]):
-                ip_dest1.join(b.join("."))
-            for c in range(Response[9:12]):
-                ip_dest2.join(c.join("."))
-            for d in range(Response[13:14]):
-                porta_source.join(d)
-            for e in range(Response[15:16]):
-                porta_dest1.join(e)
-            for f in range(Response[17:18]):
-                porta_dest2.join(f) 
-
-        if Response[0]==4:
-            for a in range(Response[1:4]):
-                ip_disc.join(a.join("."))'''
             
     ClientSocket.close()
 
-def peerServer(ip_src,porta_src):
+def peerListener(ip_src):
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    print(porta_src)
     print('.........')
-    s.bind((ip_src, porta_src))
-    print ("waiting on port:", porta_src)
+    s.bind((ip_src, PORT_UDP))
+    print ("waiting on port:", PORT_UDP)
     while 1:
         data, addr = s.recvfrom(1024)
-        print(data)
-        print('///////////////////')
+        if(data[0] == 30):            # RECEBE O CUSTO
+            array = data[1:5]
+            
+        elif(data[0] == 31):          # SEND NORMAL DATA
+            print('DATA')
 
-def peerClient(ip_dest,porta_dest):
+def peerSender(ip_dest):
     # create dgram udp socket
-    print(ip_dest)
-    print(porta_dest)
     try:
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     except socket.error:
         print ('Failed to create socket')
         sys.exit()
 
+    packetType = 20
+
     while(1) :
-        msg = (timeCalc(ip_dest))
-        try :
-            s.sendto(msg, (ip_dest,porta_dest))
-            sleep(2)
-            # receive data from client (data, addr)
-            d = s.recvfrom(1024)
-            #reply = d[0]
-            #addr = d[1]
-            #print ('Server reply : ' + reply)
-        
-        except socket.error :
-            print ('Error Code : ' + str(msg[0]) + ' Message ' + msg[1])
-            sys.exit()  
-
-'''def create_DB():
-    cur.execute("INSERT INTO routing_table(ip_Dest, port) VALUES(%s,%s)",(ip_dest1,porta_dest1))
-    cur.execute("INSERT INTO routing_table(ip_Dest, port) VALUES(%s,%s)",(ip_dest2,porta_dest2))
-    #mydb.commit()
-
-def update_DB():
-    if (cur.execute("SELECT * FROM routing_table WHERE ip_Dest=%s",ip_disc)):
-        cur.execute("DELETE FROM routing_table WHERE ip_Dest=%s",ip_disc)
-        mydb.commit()'''
+        if(packetType == 20):           # ENVIAR CALCULO DO CUSTO
+            msg = (timeCalc(ip_dest))
+            s.sendto(msg,(ip_dest))
+            
+        elif(packetType == 21):         # SEND NORMAL DATA
+            print('DATA')
 
 if __name__ == "__main__":
     
     setTime()
-    '''cur.execute("CREATE DATABASE peer_table IF NOT EXIST")
-    cur.execute("CREATE TABLE routing_table (ip_Dest VARCHAR(255),port VARCHAR(255), prox VARCHAR(255)")
-
-    ip_dest1="192.3.4.6"
-    ip_dest2="193.2.1.4"
-    porta_dest1=4000
-    porta_dest2=5000
-    create_DB()
-    for x in cur:
-        print(x)'''
 
     _thread.start_new_thread(serverComm,())
 
