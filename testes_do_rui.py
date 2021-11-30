@@ -9,19 +9,18 @@ import sys
 import os
 import struct
 
-PORT = 5000
-
 #   Conf
-HOST = '127.0.0.1'  # Standard loopback interface address (localhost)
-PORT_TCP = 9999         # Port to listen on (non-privileged ports are > 1023)
-PORT_UDP = 5000
+HOST = '127.0.0.1'      # Standard loopback interface address (localhost)
+PORT_TCP = 9999         # TCP PORT
+PORT_UDP = 5000         # UDP PORT
 
 #   IP Addresses
 ip_source=""
 ip_disc=""
 
-#   Variáveis globais partilhadas
-sendToNeighbours = 0
+#   Global Variables
+ip_neighbours = []      #   IP Neighbours
+costNeighbours = []     #   Cost Nieghbours
 
 #   Set time according to NTP Server
 def setTime():
@@ -38,7 +37,7 @@ def setTime():
 def connect(ip):
     now = datetime.now()
     con = bytearray(1)
-    con[0] = (0b0)
+    con[0] = 0
     array = ip.split(".")
     for a in range(len(array)):
         con.append(int(array[a]))
@@ -51,7 +50,7 @@ def connect(ip):
 def disconnect(ip):
     now = datetime.now()
     dis = bytearray(1)
-    dis[0]=(0b1)
+    dis[0] = 1
     array = ip.split(".")
     for a in range(len(array)):
         dis.append(int(array[a]))
@@ -60,11 +59,11 @@ def disconnect(ip):
     dis.extend(buf)
     return dis
 
-#tpm = 2
+#   Error Peer-Server TYPE 2 
 def error(ip):
     now = datetime.now()
     err = bytearray(1)
-    err.append(0b10)
+    err[0] = 2
     array = ip.split(".")
     for a in range(len(array)):
         err.append(int(array[a]))
@@ -73,14 +72,33 @@ def error(ip):
     err.extend(buf)
     return err
 
-#tpm = 6
+#   Send Costs Peer-Server TYPE 3
+def sendCosts(ip):
+    send = bytearray(1)
+    send[0] = 3
+    send.append(len(ip_neighbours))
+    x = 0
+    while(x < len(ip_neighbours)):
+        array = ip.split(".")
+        for a in range(len(array)):
+            send.append(int(array[a]))              #   IP ORIG
+        arrayDest = ip_neighbours[x]
+        arrayIpDest = arrayDest.split(".")
+        for b in range(len(array)):
+            send.append(int(arrayIpDest[b]))        #   IP DEST
+        
+        
+        x += 1
+    return send
+
+#   Packet with timestamp to calculate latency (Peer-Neighbour) TYPE 20 
 def timeCalc(ip):
     now = datetime.now()
     timeStamp = float(now.timestamp())
     inteiro = int(timeStamp)
     decimal = timeStamp - inteiro
     timeCal = bytearray(1)
-    timeCal[0] = 10
+    timeCal[0] = 20
     array = ip.split(".")
     for b in range(len(array)):
         timeCal.append(int(array[b]))
@@ -93,6 +111,47 @@ def timeCalc(ip):
         timeCal.append(buf[a])
     return timeCal
 
+#   Neighbours From Server (Server-Peer) TYPE 10
+def getNeighbours(res):
+    nNeighbours = res[1]
+    counter = 0
+    contador = 0
+    while(counter < nNeighbours):
+        array4 = res[2+contador:6+contador]
+        if(array4 is not ip_neighbours):
+            ip_neighbours.append(socket.inet_ntoa(array4))
+            contador += 4
+            counter += 1
+    return ip_neighbours
+
+def sendConnectionCost(ip_src,cost):
+    sendCost = bytearray(1)
+    sendCost[0] = 30
+    array = ip_src.split(".")
+    for b in range(len(array)):
+        sendCost.append(int(array[b]))
+    timeStamp = cost
+    inteiro = int(timeStamp)
+    decimal = timeStamp - inteiro
+    b_p = inteiro.to_bytes(4,'big')
+    for i in range(len(b_p)):
+        sendCost.append(b_p[i])
+    buf = bytearray(struct.pack('>f', decimal))
+    #timeCal[0] = (0b110)
+    for a in range(len(buf)):
+        sendCost.append(buf[a])
+    return sendCost
+
+def getTimeStampFromPacket(data):
+    inteiro = int.from_bytes(data[5:9],'big')
+    timestamp = data[9:]
+    buf = struct.unpack('>f', timestamp)
+    aux = str(buf).strip('(').strip(')').strip(',')
+    numero = inteiro + float(str(aux))
+    timestamp = datetime.fromtimestamp(numero)
+    return numero
+
+#   Thread to communicate with server
 def serverComm():
     ClientSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     print('Waiting for connection')
@@ -102,92 +161,82 @@ def serverComm():
         print(str(e))
     ipOrigin = ClientSocket.getsockname()[0]
     ip_source = ipOrigin
-
     _thread.start_new_thread(peerListener,(ip_source))
 
     enviar = 0 
     res = 0
 
-    ip_neighbours = []
-
     while True:
-        if(enviar == 0):            # CONNECT
+        if(enviar == 1):            # CONNECT
             print('CONNECT')
             packet = connect(ipOrigin)
             ClientSocket.send(packet)
             res = ClientSocket.recv(1024)
             print(res.decode('utf-8'))
-        elif(enviar == 1):          # DISCONNECT 
+        elif(enviar == 2):          # DISCONNECT 
             print('DISCONNECT')
             packet = disconnect(ipOrigin)
             ClientSocket.send(packet)
-        elif(enviar == 2):          # ERROR
+            ClientSocket.close()
+        elif(enviar == 3):          # ERROR
             print('ERROR')
             packet = error(ipOrigin)
             ClientSocket.send(packet)
+        elif(enviar == 4):          # SEND COSTS FROM NEIGHBOURS
+            print('COSTS')
+            packet = sendCosts(ipOrigin)
+            ClientSocket.send(packet)
         
-        if(res[0] == 10):          # Get Neighbours
-            nNeighbours = res[1]
-            counter = 0
-            contador = 0
-            while(counter < nNeighbours):
-                array4 = res[2+contador:6+contador]
-                if(array4 is not ip_neighbours):
-                    ip_neighbours.append(socket.inet_ntoa(array4))
-                    contador += 4
-                    counter += 1
-                    _thread.start_new_thread(peerSender,(ip_neighbours[counter],))
 
-            global sendToNeighbours
-            sendToNeighbours = 1
-
+        if(res[0] == 10):               # GET NEIGHBOURS
+            ip_neighbours = getNeighbours(res)
+            for ip in ip_neighbours:
+                socket2 = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+                pacote = timeCalc(ip_source)
+                socket2.sendto(pacote,(ip,5000))
+            print(ip_neighbours)
+        elif(res[0] == 11):             # GET GRAPH
+            print(res)
+        elif(res[0] == 12):             # 
+            print(res)
+        
         Response = ClientSocket.recv(1024)
         print(Response.decode('utf-8'))
         sleep(2)
-            
-    ClientSocket.close()
 
+#   THREAD PEER LISTEN
 def peerListener(ip_src):
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     print('.........')
     s.bind((ip_src, PORT_UDP))
-    print ("waiting on port:", PORT_UDP)
+    print ("waiting on port:",PORT_UDP)
     while 1:
         data, addr = s.recvfrom(1024)
-        if(data[0] == 30):            # RECEBE O CUSTO
-                inteiro = int.from_bytes(data[:4],'big')
-                timestamp = data[4:]
-                buf = struct.unpack('>f', timestamp)
-                aux = str(buf).strip('(').strip(')').strip(',')
-                numero = inteiro + float(str(aux))
-                timestamp= datetime.fromtimestamp(numero)
-                print(timestamp)
+        if(data[0] == 20):            # RECEIVE TIMESTAMP AND SEND COST
+            timestampFromPacket = getTimeStampFromPacket(data)
+            tempo1 = datetime.fromtimestamp(timestampFromPacket)
+            now = datetime.now()
+            timeStamp = float(now.timestamp())
+            tempo2 = datetime.fromtimestamp(timeStamp)
+            difference = tempo2 - tempo1
+            cost = difference.total_seconds()
+            socketEnvio = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            ipDestino = data[1:5]
+            ip_dest = socket.inet_ntoa(ipDestino)
+            sendCusto = sendConnectionCost(ip_src,cost)
+            socketEnvio.sendto(sendCusto,(ip_dest,5000))
+
+        elif(data[0] == 30):           # RECEIVE COST AND STORE 
             
-        elif(data[0] == 31):          # SEND NORMAL DATA
-            print('DATA')
-
-def peerSender(ip_dest):
-    # create dgram udp socket
-    try:
-        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    except socket.error:
-        print ('Failed to create socket')
-        sys.exit()
-
-    packetType = 20
-
-    while(1) :
-        if(packetType == 20):           # ENVIAR CALCULO DO CUSTO
-            msg = (timeCalc(ip_dest))
-            s.sendto(msg,(ip_dest))
+            print('ola')
             
-        elif(packetType == 21):         # SEND NORMAL DATA
-            print('DATA')
 
 if __name__ == "__main__":
     
+    #   SET MACHINE TIME
     setTime()
 
+    #   START THREAD SERVER-PEER TCP
     _thread.start_new_thread(serverComm,())
 
     while 1:
