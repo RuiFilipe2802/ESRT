@@ -281,5 +281,7 @@ if __name__ == "__main__":
     #   START THREAD SERVER-PEER TCP
     _thread.start_new_thread(serverComm,())
 
+
+
     while 1:
         pass
