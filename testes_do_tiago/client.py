@@ -2,6 +2,16 @@ import socket
 import select
 import _thread
 from multiprocessing import Process, Lock
+from datetime import date, datetime
+import socket
+from time import *
+import time
+import _thread
+import ntplib
+from datetime import datetime
+import sys
+import os
+import struct
 
 msg = []
 
@@ -22,19 +32,16 @@ def socket_server():
     outputs = [s]
     while inputs:
         #print('Non Blocking - waiting...')
+        global msg
         readable,writable,exceptional = select.select(inputs,outputs,inputs,0.5)
-       
         for s in writable:
-            print("Escrever")
-            global msg
+            #print("Escrever")
             if(len(msg)> 0):
                 msg = msg.encode()
                 byte_array = bytearray(msg)
                 print('Non Blocking - sending...')
                 data = s.send(byte_array)
-                #data = s.send(b'hello\r\n')
                 print(f'Non Blocking - sent: {data}')
-                outputs.remove(s)
                 msg = []
                 print(msg)
 
@@ -42,16 +49,13 @@ def socket_server():
             #print(f'Non Blocking - reading...')
             data = s.recv(1024)
             print(f'Non Blocking - data: {data}')
-            #print(f'Non Blocking - closing...')
-            #s.close()
-            #inputs.remove(s)
-            #break
+ 
 
         for s in exceptional:
-            #print(f'Non Blocking - error')
             inputs.remove(s)
             outputs.remove(s)
             break
+
 def fun_input():
     while 1:
         global msg
@@ -61,5 +65,7 @@ def fun_input():
 if __name__ == "__main__":
     
     _thread.start_new_thread(socket_server,())
-    _thread.start_new_thread(fun_input(),())
+    _thread.start_new_thread(fun_input,())
+    while 1:
+        pass
     
