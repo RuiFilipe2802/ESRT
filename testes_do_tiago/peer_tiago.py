@@ -3,8 +3,9 @@ import socket
 from time import *
 import time
 import _thread
-#import ntplib
+import ntplib
 from datetime import datetime
+import sys
 import os
 import struct
 from dijkstra import *
@@ -15,16 +16,15 @@ HOST = '127.0.0.1'      # Standard loopback interface address (localhost)
 PORT_TCP = 9999         # TCP PORT
 PORT_UDP = 5000         # UDP PORT
 
-#   IP Addresses
-ip_source=""
-ip_disc=""
 
 #   Global Variables
+ip_source = 0
+neighbours = {}         #   Dictinoary(IP:Cost)
 ip_neighbours = []      #   IP Neighbours
 costNeighbours = []     #   Cost Nieghbours
-routing_table = []      #   routing_table
-enviar = 0 
+routing_table = []      #   Routing Table
 
+enviar = 0 
 
 #   Set time according to NTP Server
 def setTime():
@@ -32,10 +32,10 @@ def setTime():
     response = c.request ('pool.ntp.org') 
     ts = response.tx_time 
     _date = time.strftime ('%y-%m-%d ' , time.localtime(ts)) 
-    os.system('date --set='+_date)
+    os.system('sudo date --set='+_date)
     _time = time.strftime('%H:%M:%S', time.localtime(ts))
     t = datetime.fromtimestamp(response.orig_time) 
-    os.system('date +%T -s "'+_time+'"')
+    os.system('sudo date +%T -s "'+_time+'"')
     
 #   Connect Peer-Server TYPE 0
 def connect(ip):
@@ -90,8 +90,16 @@ def sendCosts(ip):
         arrayIpDest = arrayDest.split(".")
         for b in range(len(array)):
             send.append(int(arrayIpDest[b]))        #   IP DEST
-        
-        
+        custo = neighbours[ip_neighbours[x]]
+        timeStamp = custo
+        inteiro = int(timeStamp)
+        decimal = timeStamp - inteiro
+        b_p = inteiro.to_bytes(4,'big')
+        for i in range(len(b_p)):
+            send.append(b_p[i])                     #   CUSTO (INT)
+        buf = bytearray(struct.pack('>f', decimal))
+        for a in range(len(buf)):
+            send.append(buf[a])                     #   CUSTO (FLOAT)
         x += 1
     return send
 
@@ -128,6 +136,7 @@ def getNeighbours(res):
             counter += 1
     return ip_neighbours
 
+#   Send Cost (Neighbour-Peer) TYPE 30
 def sendConnectionCost(ip_src,cost):
     sendCost = bytearray(1)
     sendCost[0] = 30
@@ -141,11 +150,11 @@ def sendConnectionCost(ip_src,cost):
     for i in range(len(b_p)):
         sendCost.append(b_p[i])
     buf = bytearray(struct.pack('>f', decimal))
-    #timeCal[0] = (0b110)
     for a in range(len(buf)):
         sendCost.append(buf[a])
     return sendCost
 
+#   GET Cost from timestamp
 def getTimeStampFromPacket(data):
     inteiro = int.from_bytes(data[5:9],'big')
     timestamp = data[9:]
@@ -155,8 +164,8 @@ def getTimeStampFromPacket(data):
     timestamp = datetime.fromtimestamp(numero)
     return numero
 
-#set the routing table 
-def set_routing_table(packet):
+#  SET ROUTING TABLE
+def set_routing_table(packet,ip_source):
     tamanho = int(packet[1])
     topologia = packet[2:len(packet)]
     array_topologia= [ [ 0 for i in range(3) ] for j in range(tamanho) ]
@@ -173,8 +182,8 @@ def set_routing_table(packet):
 
     return routing_table_calculation(array_topologia,ip_source)
 
-#send normal data
-def send_normal_data(packet):
+#   SEND NORMAL DATA
+def send_normal_data(packet,ip_source):
     ip_destino = socket.inet_ntoa(packet[1:5])
     #print(ip_destino)
     ip_rede_destino = []
@@ -189,6 +198,24 @@ def send_normal_data(packet):
                 break    
     return ip_rede_destino if len(ip_rede_destino) > 0 else 1
 
+#   CHECKS COSTS t=5s
+def check_costs():
+    while 1:
+        sleep(5)
+        mudou = 0
+        global enviar, neighbours
+        cost_stored = neighbours
+        for ip in ip_neighbours:
+                    socket2 = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+                    pacote = timeCalc(ip_source)
+                    socket2.sendto(pacote,(ip,5000))
+        for ip in ip_neighbours:
+            if(cost_stored[ip_neighbours[ip]]<neighbours[ip_neighbours[ip]]):
+                neighbours[ip_neighbours[ip]] = cost_stored[ip_neighbours[ip]]
+                mudou = 1
+        if(mudou == 1):
+            enviar = '4'
+
 #   Thread to communicate with server
 def serverComm():
     ClientSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -199,11 +226,11 @@ def serverComm():
         print(str(e))
     ipOrigin = ClientSocket.getsockname()[0]
     ip_source = ipOrigin
-
-    _thread.start_new_thread(peerListener,())
+    print(ip_source)
+    _thread.start_new_thread(peerListener,(ip_source,))
 
     print('Non Blocking - connecting')
-    ret = ClientSocket.connect_ex(('localhost',9999)) #BLOCKING
+    ret = ClientSocket.connect_ex((HOST,PORT_TCP)) #BLOCKING
 
     if ret != 0:
         print('Non Blocking - failed to connect!')
@@ -213,6 +240,7 @@ def serverComm():
 
     inputs = [ClientSocket]
     outputs = [ClientSocket]
+
     while inputs:
         #print('Non Blocking - waiting...')
         global enviar
@@ -224,48 +252,53 @@ def serverComm():
                 packet = connect(ipOrigin)
                 ClientSocket.send(packet)
                 enviar = 0
+                _thread.start_new_thread(check_costs,())    
             elif(enviar == '2'):          # DISCONNECT 
                 print('DISCONNECT')
                 packet = disconnect(ipOrigin)
                 ClientSocket.send(packet)
                 #ClientSocket.close()
                 enviar = 0
-            elif(enviar == 3):          # ERROR
+            elif(enviar == '3'):            # ERROR
                 print('ERROR')
                 packet = error(ipOrigin)
                 ClientSocket.send(packet)
-            elif(enviar == 4):          # SEND COSTS FROM NEIGHBOURS
+                enviar = 0
+            elif(enviar == '4'):            # SEND COSTS FROM NEIGHBOURS
                 print('COSTS')
                 packet = sendCosts(ipOrigin)
-                ClientSocket.send(packet)     
+                ClientSocket.send(packet) 
+                enviar = 0
+        
+
         for s in readable:
             #print(f'Non Blocking - reading...')
-            res = s.recv(1024)
+            res = ClientSocket.recv(1024)
             if(res[0] == 10):               # GET NEIGHBOURS
                 ip_neighbours = getNeighbours(res)
                 for ip in ip_neighbours:
                     socket2 = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
                     pacote = timeCalc(ip_source)
                     socket2.sendto(pacote,(ip,5000))
-                    print(ip_neighbours)
+                _thread.start_new_thread(check_costs,())
             elif(res[0] == 11):             # GET TOPOLOGIA
                 global routing_table
-                routing_table = set_routing_table(res)
+                routing_table = set_routing_table(res,ip_source)
             elif(res[0] == 12):             # 
-                print(res)
+                enviar = '4'
             else:
                 print(res)
+
         for s in exceptional:
             inputs.remove(s)
             outputs.remove(s)
             break
-               
 
 #   THREAD PEER LISTEN
-def peerListener():
+def peerListener(ip_src):
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     print('.........')
-    s.bind((ip_source, PORT_UDP))
+    s.bind((ip_src, PORT_UDP))
     print ("waiting on port:",PORT_UDP)
     while 1:
         data, addr = s.recvfrom(1024)
@@ -283,13 +316,19 @@ def peerListener():
             sendCusto = sendConnectionCost(ip_src,cost)
             socketEnvio.sendto(sendCusto,(ip_dest,5000))
 
-        elif(data[0] == 30):           # RECEIVE COST AND STORE             
-            print('ola')   
+        elif(data[0] == 30):           # RECEIVE COST AND STORE 
+            ipReceived = data[1:5]
+            ip_rec = socket.inet_ntoa(ipReceived)
+            inteiro = int.from_bytes(data[5:9], byteorder='big')
+            buf2 = struct.unpack('>f', data[9:])
+            aux = str(buf2).strip('(').strip(')').strip(',')
+            numero = inteiro + float(str(aux))
+            timestamp = datetime.fromtimestamp(numero)
+            neighbours[ip_rec] = numero
         elif(data[0] == 31):
             ip_enviar = send_normal_data(data)
             #UDP para enviar o data com ip = ip_enviar se ip = 1 nao enviar
             print('normal data')
-
             
 def fun_input():
     while 1:
@@ -300,10 +339,10 @@ def fun_input():
 if __name__ == "__main__":
     
     #   SET MACHINE TIME
-    #setTime()
+    setTime()
 
     #   START THREAD SERVER-PEER TCP
-    _thread.start_new_thread(serverComm,())
+    _thread.start_new_thread(serverComm,())    
     _thread.start_new_thread(fun_input,())
 
     while 1:
