@@ -4,7 +4,6 @@ from time import *
 import time
 import _thread
 import ntplib
-from datetime import datetime
 import sys
 import os
 import struct
@@ -138,6 +137,38 @@ if __name__ == "__main__":
         print(neighbours[ip_neighbours[c]])
         c+=1
 
+    print('AQUI')
+    c = ntplib.NTPClient() 
+    response = c.request ('pt.pool.ntp.org') 
+    ts = response.tx_time 
+    print(response)
+    '''_date = datetime.strftime('%y-%m-%d ',datetime.localtime(ts)) 
+    os.system('date --set='+_date)
+    _time = datetime.strftime('%H:%M:%S', datetime.localtime(ts))
+    t = datetime.fromtimestamp(response.orig_time) 
+    os.system('date +%T -s "'+_time+'"')'''
+
+    ServerSocket = socket.socket()
+    
+    try:
+        ServerSocket.bind(('127.0.0.1',9999))
+        
+    except socket.error as e:
+        print(str(e))
+    print('Waiting for Connection')
+    ServerSocket.listen(5)
+
+    while True:
+        Client, address = ServerSocket.accept()
+        #add_peer_database(threadCount, address[0], portas_peer, 0)
+        
+        print('Connected to: ' + address[0] + ':' + str(address[1]))
+        #verificar_mensagens.append(0)
+        #lista_mensagens.append('')
+        #start_new_thread(thread_client,(Client, threadCount,portas_peer,))
+        #threadCount += 1
+        #portas_peer +=1
+        #print('Thread Number: ' + str(threadCount))
 
     while(1):            
         pass
