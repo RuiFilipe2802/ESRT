@@ -16,11 +16,12 @@ HOST = '127.0.0.1'      # Standard loopback interface address (localhost)
 PORT_TCP = 9999         # TCP PORT
 PORT_UDP = 5000         # UDP PORT
 
+#   IP ADDRESS
+ip_source = ""
 
 #   Global Variables
 neighbours = {}         #   Dictinoary(IP:Cost)
 ip_neighbours = []      #   IP Neighbours
-costNeighbours = []     #   Cost Nieghbours
 routing_table = []      #   Routing Table
 
 enviar = 0 
@@ -136,10 +137,10 @@ def getNeighbours(res):
     return ip_neighbours
 
 #   Send Cost (Neighbour-Peer) TYPE 30
-def sendConnectionCost(ip_src,cost):
+def sendConnectionCost(cost):
     sendCost = bytearray(1)
     sendCost[0] = 30
-    array = ip_src.split(".")
+    array = ip_source.split(".")
     for b in range(len(array)):
         sendCost.append(int(array[b]))
     timeStamp = cost
@@ -164,7 +165,7 @@ def getTimeStampFromPacket(data):
     return numero
 
 #  SET ROUTING TABLE
-def set_routing_table(packet,ip_source):
+def set_routing_table(packet):
     tamanho = int(packet[1])
     topologia = packet[2:len(packet)]
     array_topologia= [ [ 0 for i in range(3) ] for j in range(tamanho) ]
@@ -182,7 +183,7 @@ def set_routing_table(packet,ip_source):
     return routing_table_calculation(array_topologia,ip_source)
 
 #   SEND NORMAL DATA
-def send_normal_data(packet,ip_source):
+def send_normal_data(packet):
     ip_destino = socket.inet_ntoa(packet[1:5])
     #print(ip_destino)
     ip_rede_destino = []
@@ -197,6 +198,25 @@ def send_normal_data(packet,ip_source):
                 break    
     return ip_rede_destino if len(ip_rede_destino) > 0 else 1
 
+#   CHECK IF COST CHANGES EVERY 30 SEC
+def check_costs():
+    while 1:
+        sleep(30)
+        mudou = 0
+        global enviar, neighbours
+        cost_stored = dict(neighbours)
+        for ip in ip_neighbours:
+            socket2 = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            pacote = timeCalc(ip_source)
+            socket2.sendto(pacote,(ip,5000))
+        sleep(5)
+        for ip in ip_neighbours:
+            if(float(cost_stored[ip]) < float(neighbours[ip])):
+                neighbours[ip] = cost_stored[ip]
+                mudou = 1
+        if(mudou == 1):
+            enviar = '4'
+
 #   Thread to communicate with server
 def serverComm():
     ClientSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -206,6 +226,7 @@ def serverComm():
     except socket.error as e:
         print(str(e))
     ipOrigin = ClientSocket.getsockname()[0]
+    global ip_source
     ip_source = ipOrigin
     print(ip_source)
     _thread.start_new_thread(peerListener,(ip_source,))
@@ -237,7 +258,6 @@ def serverComm():
                 print('DISCONNECT')
                 packet = disconnect(ipOrigin)
                 ClientSocket.send(packet)
-                #ClientSocket.close()
                 enviar = 0
             elif(enviar == '3'):            # ERROR
                 print('ERROR')
@@ -250,7 +270,6 @@ def serverComm():
                 ClientSocket.send(packet) 
                 enviar = 0
         
-
         for s in readable:
             #print(f'Non Blocking - reading...')
             res = ClientSocket.recv(1024)
@@ -265,8 +284,6 @@ def serverComm():
                 routing_table = set_routing_table(res,ip_source)
             elif(res[0] == 12):             # 
                 enviar = '4'
-            else:
-                print(res)
 
         for s in exceptional:
             inputs.remove(s)

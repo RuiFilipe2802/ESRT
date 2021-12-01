@@ -137,16 +137,20 @@ if __name__ == "__main__":
         print(neighbours[ip_neighbours[c]])
         c+=1
 
+    mudou = 0
+    print(neighbours)
     print('AQUI')
-    c = ntplib.NTPClient() 
-    response = c.request ('pt.pool.ntp.org') 
-    ts = response.tx_time 
-    print(response)
-    '''_date = datetime.strftime('%y-%m-%d ',datetime.localtime(ts)) 
-    os.system('date --set='+_date)
-    _time = datetime.strftime('%H:%M:%S', datetime.localtime(ts))
-    t = datetime.fromtimestamp(response.orig_time) 
-    os.system('date +%T -s "'+_time+'"')'''
+    cost_changed = dict(neighbours)
+    cost_changed['10.0.0.5'] = 1.00213
+    for ip in ip_neighbours:
+        if(float(cost_changed[ip]) < float(neighbours[ip])):
+            neighbours[ip] = cost_changed[ip]
+            mudou = 1
+    if(mudou == 1):
+        enviar = '4'
+        print(cost_changed)
+        print(neighbours)
+    
 
     ServerSocket = socket.socket()
     
