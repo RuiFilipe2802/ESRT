@@ -3,11 +3,12 @@ import socket
 from time import *
 import time
 import _thread
-import ntplib
+#import ntplib
 from datetime import datetime
 import os
 import struct
 from dijkstra import *
+import select
 
 #   Conf
 HOST = '127.0.0.1'      # Standard loopback interface address (localhost)
@@ -22,6 +23,7 @@ ip_disc=""
 ip_neighbours = []      #   IP Neighbours
 costNeighbours = []     #   Cost Nieghbours
 routing_table = []      #   routing_table
+enviar = 0 
 
 
 #   Set time according to NTP Server
@@ -197,54 +199,73 @@ def serverComm():
         print(str(e))
     ipOrigin = ClientSocket.getsockname()[0]
     ip_source = ipOrigin
-    _thread.start_new_thread(peerListener,(ip_source))
 
-    enviar = 0 
-    res = 0
+    _thread.start_new_thread(peerListener,())
 
-    while True:
-        if(enviar == 1):            # CONNECT
-            print('CONNECT')
-            packet = connect(ipOrigin)
-            ClientSocket.send(packet)
-            res = ClientSocket.recv(1024)
-            print(res.decode('utf-8'))
-        elif(enviar == 2):          # DISCONNECT 
-            print('DISCONNECT')
-            packet = disconnect(ipOrigin)
-            ClientSocket.send(packet)
-            ClientSocket.close()
-        elif(enviar == 3):          # ERROR
-            print('ERROR')
-            packet = error(ipOrigin)
-            ClientSocket.send(packet)
-        elif(enviar == 4):          # SEND COSTS FROM NEIGHBOURS
-            print('COSTS')
-            packet = sendCosts(ipOrigin)
-            ClientSocket.send(packet)
-        
+    print('Non Blocking - connecting')
+    ret = ClientSocket.connect_ex(('localhost',9999)) #BLOCKING
 
-        if(res[0] == 10):               # GET NEIGHBOURS
-            ip_neighbours = getNeighbours(res)
-            for ip in ip_neighbours:
-                socket2 = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-                pacote = timeCalc(ip_source)
-                socket2.sendto(pacote,(ip,5000))
-            print(ip_neighbours)
-        elif(res[0] == 11):             # GET TOPOLOGI
-            routing_table = set_routing_table(res)
-        elif(res[0] == 12):             # 
-            print(res)
-        
-        Response = ClientSocket.recv(1024)
-        print(Response.decode('utf-8'))
-        sleep(2)
+    if ret != 0:
+        print('Non Blocking - failed to connect!')
+    
+    print('Non Blocking - connected!')
+    ClientSocket.setblocking(False)
+
+    inputs = [ClientSocket]
+    outputs = [ClientSocket]
+    while inputs:
+        #print('Non Blocking - waiting...')
+        global enviar
+        readable,writable,exceptional = select.select(inputs,outputs,inputs,0.5)
+        for s in writable:
+            #print("Escrever")
+            if(enviar == '1'):            # CONNECT
+                print('CONNECT')
+                packet = connect(ipOrigin)
+                ClientSocket.send(packet)
+                enviar = 0
+            elif(enviar == '2'):          # DISCONNECT 
+                print('DISCONNECT')
+                packet = disconnect(ipOrigin)
+                ClientSocket.send(packet)
+                #ClientSocket.close()
+                enviar = 0
+            elif(enviar == 3):          # ERROR
+                print('ERROR')
+                packet = error(ipOrigin)
+                ClientSocket.send(packet)
+            elif(enviar == 4):          # SEND COSTS FROM NEIGHBOURS
+                print('COSTS')
+                packet = sendCosts(ipOrigin)
+                ClientSocket.send(packet)     
+        for s in readable:
+            #print(f'Non Blocking - reading...')
+            res = s.recv(1024)
+            if(res[0] == 10):               # GET NEIGHBOURS
+                ip_neighbours = getNeighbours(res)
+                for ip in ip_neighbours:
+                    socket2 = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+                    pacote = timeCalc(ip_source)
+                    socket2.sendto(pacote,(ip,5000))
+                    print(ip_neighbours)
+            elif(res[0] == 11):             # GET TOPOLOGIA
+                global routing_table
+                routing_table = set_routing_table(res)
+            elif(res[0] == 12):             # 
+                print(res)
+            else:
+                print(res)
+        for s in exceptional:
+            inputs.remove(s)
+            outputs.remove(s)
+            break
+               
 
 #   THREAD PEER LISTEN
-def peerListener(ip_src):
+def peerListener():
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     print('.........')
-    s.bind((ip_src, PORT_UDP))
+    s.bind((ip_source, PORT_UDP))
     print ("waiting on port:",PORT_UDP)
     while 1:
         data, addr = s.recvfrom(1024)
@@ -262,26 +283,28 @@ def peerListener(ip_src):
             sendCusto = sendConnectionCost(ip_src,cost)
             socketEnvio.sendto(sendCusto,(ip_dest,5000))
 
-        elif(data[0] == 30):           # RECEIVE COST AND STORE 
-            
-            print('ola')
-        
+        elif(data[0] == 30):           # RECEIVE COST AND STORE             
+            print('ola')   
         elif(data[0] == 31):
             ip_enviar = send_normal_data(data)
             #UDP para enviar o data com ip = ip_enviar se ip = 1 nao enviar
             print('normal data')
 
             
+def fun_input():
+    while 1:
+        global enviar
+        enviar = input()
+        print('Input: '+enviar)
 
 if __name__ == "__main__":
     
     #   SET MACHINE TIME
-    setTime()
+    #setTime()
 
     #   START THREAD SERVER-PEER TCP
     _thread.start_new_thread(serverComm,())
-
-
+    _thread.start_new_thread(fun_input,())
 
     while 1:
         pass
