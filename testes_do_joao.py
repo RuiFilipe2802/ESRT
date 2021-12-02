@@ -125,6 +125,7 @@ def serverComm():
     print(packet)
     ClientSocket.send(packet)
     Response = ClientSocket.recv(1024)
+    print("stuck")
     print(Response)
     while True:
         if Response == b'-1':

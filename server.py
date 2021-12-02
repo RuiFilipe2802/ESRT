@@ -112,19 +112,25 @@ def check_if_peer_is_out_of_neighbor():
 
 
 def add_peer_database(id,ip,porta,status):
-    mycursor.execute("INSERT INTO peer(id,ip,porta,status) VALUES (?,?,?,?)",(id,ip,porta,status))
-    mydb.commit()
+    try:
+        lock.acquire(True)
+        mycursor.execute("INSERT INTO peer(id,ip,porta,status) VALUES (?,?,?,?)",(id,ip,porta,status))
+        mydb.commit()
+    finally:
+        lock.release()
 
 def set_status_on(id):
     sql = "UPDATE peer set status = 1 WHERE id = "+str(id)
     mycursor.execute(sql)
     mydb.commit()
+    
 
 
 def set_status_off(id):
     sql = "UPDATE peer set status = 0 WHERE id = "+str(id)
     mycursor.execute(sql)
     mydb.commit()
+
 
 def verificar_status(b):
     sql = "SELECT status FROM peer WHERE id = "+str(b)+""
@@ -136,6 +142,7 @@ def verificar_status(b):
         return False
     else: 
         return True
+    
 
 def qnt_peers_on():
     soma = 0
@@ -255,6 +262,7 @@ def thread_client(connection,n_thread, listening_port):
                 aux = True
                 set_status_on(n_thread)
                 if qnt_peers_on() == 1:
+                    print("entrei aqui")
                     connection.send(b'-1')
                     aux = False
                 print("tpm 0")
