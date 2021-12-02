@@ -9,6 +9,8 @@ import mysql.connector
 import struct
 from routing.dijkstra import Graph
 from testes_do_joao import disconnect
+import sqlite3
+from sqlite3 import Error
 
 host = '127.0.0.1'  # Standard loopback interface address (localhost)
 port = 9999     # Port to listen on (non-privileged ports are > 1023)
@@ -33,16 +35,27 @@ grafo = []
 
 g = Graph()
 
+
+mydb = sqlite3.connect('s_database.db',check_same_thread=False)
+
 #pass joao = Johnny1999@
 
-mydb = mysql.connector.connect(
+'''mydb = mysql.connector.connect(
   host = "localhost",
   user = "root",
   password = "johnny1999",
   database = "server_database"
-)
+)'''
 
 mycursor = mydb.cursor()
+
+mycursor.execute("DROP TABLE IF EXISTS peer")
+mycursor.execute("""CREATE TABLE IF NOT EXISTS peer(
+    id integer PRIMARY KEY,
+    ip text,
+    porta integer,
+    status integer
+); """)
     
 
 def getTime():
@@ -99,13 +112,14 @@ def check_if_peer_is_out_of_neighbor():
 
 
 def add_peer_database(id,ip,porta,status):
-    mycursor.execute("INSERT INTO peer(id,ip,porta,status) VALUES (%s,%s,%s,%s)",(id,ip,porta,status))
+    mycursor.execute("INSERT INTO peer(id,ip,porta,status) VALUES (?,?,?,?)",(id,ip,porta,status))
     mydb.commit()
 
 def set_status_on(id):
     sql = "UPDATE peer set status = 1 WHERE id = "+str(id)
     mycursor.execute(sql)
     mydb.commit()
+
 
 def set_status_off(id):
     sql = "UPDATE peer set status = 0 WHERE id = "+str(id)

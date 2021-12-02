@@ -231,7 +231,7 @@ if __name__ == "__main__":
     #print("separação")
     g.print_graph()
 
-    sleep(20)
+    #sleep(20)
     _thread.start_new_thread(serverComm,())
     
 
