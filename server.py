@@ -145,17 +145,34 @@ def interpretar_trama_custo(b_array):   #tpm, n_viz ; ip dele; ip vizinho; custo
         ip_peer.append(int(b_array[a]))
     for a in range(4):
         ip_viz.append(int(b_array[4+a]))
-    print(ip_peer)
-    print(ip_viz)
     s_ip_peer = str(ip_peer[0])+"."+str(ip_peer[1])+"."+str(ip_peer[2])+"."+str(ip_peer[3])
     s_ip_viz = str(ip_viz[0])+"."+str(ip_viz[1])+"."+str(ip_viz[2])+"."+str(ip_viz[3])
-    print(b_array[8:12])
     inteiro = int.from_bytes(b_array[8:11],'big')
-    print(b_array[12:])
     buf = (struct.unpack('>f',b_array[12:]))
     aux = str(buf).strip('(').strip(')').strip(',')
     custo = inteiro + float(str(aux))
     return s_ip_peer, s_ip_viz, custo
+
+def trama_grafo(array):
+    trama = bytearray(0)
+    trama.append(11)
+    lenght = len(array)
+    trama.append(lenght)
+    for i in range(lenght):
+        for j in range(3):
+            if j == 2:
+                inteiro = int(array[i][j])
+                decimal = float(array[i][j]) - inteiro
+                b_int = inteiro.to_bytes(4,'big')
+                trama.extend(b_int)
+                buf = struct.pack('>f',decimal)
+                trama.extend(buf)
+            else:
+                ip = array[i][j].split(".")
+                print(ip)
+                for a in range(len(ip)):
+                    trama.append(int(ip[a]))
+    return trama
     
     
 def atribuir_vizinhos(id):
@@ -220,6 +237,7 @@ def thread_client(connection,n_thread, listening_port):
             if data[0] == 0:
                 variavel_broadcast_in = 1
                 check_topologia = 0
+                id_broadcast_in = n_thread
                 aux = True
                 set_status_on(n_thread)
                 if qnt_peers_on() == 1:
@@ -250,7 +268,6 @@ def thread_client(connection,n_thread, listening_port):
                     
             elif data[0] == 1:  #alguem se desconectou
                 print("Desconectou-se")
-                connection.send(b'-2')
                 set_status_off(n_thread)
                 g.remove_peer(get_ip_neighbor(n_thread))
                 variavel_broadcast_out = 1
@@ -284,17 +301,33 @@ def thread_client(connection,n_thread, listening_port):
             
         if check_topologia == qnt_peers_on() and broadcast_enc == 1:
             #enviar o grafo
-            connection.send("ole".encode('utf-8'))
+            topologia = g.get_graph_em_forma_de_array()
+            packet = trama_grafo(topologia)
+            connection.send(packet)
             print("entrei e agora vou sair"+str(n_thread))
             broadcast_enc = 0
         
         if variavel_broadcast_out == 1 and n_thread != id_broadcast_out and broadcast_for_out == 1:
             count_for_broadcast_out = count_for_broadcast_out + 1
+            if g.out_of_neighbor(get_ip_neighbor(n_thread)):
+                viz_ids = []
+                viz_ids = atribuir_vizinhos(n_thread)
+                if qnt_peers_on() == 2:
+                    print("tenho 2")
+                    #enviar apenas um vizinho, o 2 ip vai com 0.0.0.0 e porta a 0
+                    ip1 = get_ip_neighbor(viz_ids[0])
+                    packet = send_neighbors(1, ip1,'0')
+                else:
+                    ip1 = get_ip_neighbor(viz_ids[0])
+                    ip2 = get_ip_neighbor(viz_ids[1])
+                    packet = send_neighbors(2, ip1,ip2)
+                connection.send(packet)
+            else:
+                connection.send(connection_ended(get_ip_neighbor(id_broadcast_out)))
             if count_for_broadcast_out == qnt_peers_on():
                 count_for_broadcast_out = 0
                 variavel_broadcast_out = 0
                 id_broadcast_out = -1
-            connection.send(connection_ended(get_ip_neighbor(id_broadcast_out)))
 
         if variavel_broadcast_in == 2 and n_thread != id_broadcast_in and broadcast_for__in == 1:
             #avisar que desconectou
@@ -303,7 +336,7 @@ def thread_client(connection,n_thread, listening_port):
                 count_for_broadcast_in = 0
                 variavel_broadcast_in = 0
                 id_broadcast_in = -1
-            connection.send(connection_started(get_ip_neighbor(id_broadcast_out)))
+            connection.send(connection_started(get_ip_neighbor(id_broadcast_in)))
         
         lock.release()
          

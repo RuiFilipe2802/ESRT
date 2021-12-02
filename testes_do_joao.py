@@ -6,6 +6,7 @@ import ntplib
 from datetime import datetime
 import sys
 from routing.dijkstra import Graph
+import struct
 
 
 from routing.dijkstra import Graph
@@ -173,10 +174,57 @@ g.add_edge("127.0.0.4","127.0.0.1",9)
 g.add_edge("127.0.0.4","127.0.0.4",12)
 g.add_edge("127.0.0.5","127.0.0.3",19)
 
+def trama_grafo(array):
+    trama = bytearray(0)
+    trama.append(11)
+    lenght = len(array)
+    trama.append(lenght)
+    for i in range(lenght):
+        for j in range(3):
+            if j == 2:
+                inteiro = int(array[i][j])
+                decimal = float(array[i][j]) - inteiro
+                b_int = inteiro.to_bytes(4,'big')
+                trama.extend(b_int)
+                buf = struct.pack('>f',decimal)
+                trama.extend(buf)
+            else:
+                ip = array[i][j].split(".")
+                print(ip)
+                for a in range(len(ip)):
+                    trama.append(int(ip[a]))
+    return trama
+
+def set_routing_table(packet):
+    tamanho = int(packet[1])
+    topologia = packet[2:len(packet)]
+    array_topologia= [ [ 0 for i in range(3) ] for j in range(tamanho) ]
+    counter = 0
+    contador = 0
+    while(counter < tamanho):
+        array_ip1 = topologia[contador:4+contador]
+        array_topologia [counter][0] = socket.inet_ntoa(array_ip1)
+        array_ip2 = topologia[4+contador:8+contador]
+        array_topologia [counter][1] = socket.inet_ntoa(array_ip2)
+        array_topologia [counter][2] = int(topologia[8+contador])
+        contador +=9
+        counter += 1
+
+    print(array_topologia)
+
+    return array_topologia,ip_source
+        
+
+
+
 
 if __name__ == "__main__":
-    print("ola")
     g.print_graph()
+    packet = bytearray(0)
+    topo = g.get_graph_em_forma_de_array()
+    packet = trama_grafo(topo)
+    set_routing_table(packet)
+    print(packet)
     print('ole')
     #g.remove_peer_lig("127.0.0.3")
     print(g.out_of_neighbor("127.0.0.5"))
