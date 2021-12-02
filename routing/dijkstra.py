@@ -20,7 +20,11 @@ class Vertex:
         self.adjacent[neighbor] = weight
 
     def get_connections(self):
-        return self.adjacent.keys()  
+        #print(self)
+        return self.adjacent.keys()
+
+    def delete_vertex(self, n):
+        self.adjacent.pop(n)  
 
     def get_id(self):
         return self.id
@@ -33,6 +37,12 @@ class Vertex:
 
     def get_distance(self):
         return self.distance
+    
+    def is_in(self, n):
+        if n in self.adjacent.keys():
+            return True
+        else:
+            return False
 
     def set_previous(self, prev):
         self.previous = prev
@@ -76,6 +86,26 @@ class Graph:
         else:
             return None
 
+    def out_of_neighbor(self,ip):
+        if len(self.vert_dict[ip].get_connections()) == 0:
+            return True
+        else:
+            return False
+        
+
+    def remove_peer_lig(self,n):
+        for value in self.vert_dict.values():
+            for w in value.get_connections():
+                if w.is_in(self.get_vertex(n)):
+                    w.delete_vertex(self.get_vertex(n))
+        self.vert_dict.pop(n)
+        
+                    
+    def delete_graph(self):
+        self.vert_dict.clear()
+        self.num_vertices = 0
+        
+
     def add_edge(self, frm, to, cost = 0):
         if frm not in self.vert_dict:
             self.add_vertex(frm)
@@ -100,6 +130,31 @@ class Graph:
                 vid = v.get_id()
                 wid = w.get_id()
                 print ('( %s , %s, %3d)'  % ( vid, wid, v.get_weight(w))) 
+                
+
+    def get_graph_em_forma_de_array(self):
+        array_topologia = []
+        x = 0
+        for v in self:
+            for w in v.get_connections():
+                vid = v.get_id()
+                wid = w.get_id()
+                array_topologia.append(( vid, wid, v.get_weight(w)))         
+        return array_topologia
+    
+    def remove_peer(self, vertex):
+        topologia = self.get_graph_em_forma_de_array()
+        new_topologia = []
+        x = 0
+        while x < len(topologia):
+            if(topologia[x][0] == vertex or topologia[x][1] == vertex):
+                pass
+            else:
+                new_topologia.append((topologia[x][0],topologia[x][1],topologia[x][2]))
+            x = x + 1
+        print("new")
+        print(new_topologia)
+        return new_topologia
 
 
 def shortest(v, path):

@@ -5,6 +5,10 @@ import _thread
 import ntplib
 from datetime import datetime
 import sys
+from routing.dijkstra import Graph
+
+
+from routing.dijkstra import Graph
 #import mysql.connector
 
 host = '127.0.0.1'  # Standard loopback interface address (localhost)
@@ -115,17 +119,24 @@ def serverComm():
     except socket.error as e:
         print(str(e))
     aux = True
+    packet = connect("192.168.58.25")
+    print("con")
+    print(packet)
+    ClientSocket.send(packet)
+    Response = ClientSocket.recv(1024)
+    print(Response)
     while True:
-        
-        #Input = input('Say Something: ')
-        packet = connect("192.168.58.25")
-        print("con")
-        print(packet)
-        ClientSocket.send(packet)
-        Response = ClientSocket.recv(1024)
-        print(Response)
         if Response == b'-1':
             print("waiting")
+            sleep(2)
+            packet = connect("192.168.58.25")
+            ClientSocket.send(packet)
+            Response = ClientSocket.recv(1024)
+            print("recebi os neigbhors")
+            sleep(1)
+            packet = sendCosts("192.168.58.25")
+            ClientSocket.send(packet)
+            Response = ClientSocket.recv(1024)
         else:
             packet = sendCosts("192.168.58.25")
             print("encam")
@@ -138,18 +149,41 @@ def serverComm():
                 print(packet)
                 ClientSocket.send(packet)
                 Response = ClientSocket.recv(1024)
+                print(Response.decode('utf-8'))
             
         sleep(5)
             
             
     ClientSocket.close()
 
+g = Graph()
 
+g.add_vertex("127.0.0.1")
+g.add_vertex("127.0.0.2")
+g.add_vertex("127.0.0.3")
+g.add_vertex("127.0.0.4")
+g.add_vertex("127.0.0.5")
+
+
+g.add_edge("127.0.0.1","127.0.0.2", 5)
+g.add_edge("127.0.0.2","127.0.0.1",4)
+g.add_edge("127.0.0.3","127.0.0.1",6)
+g.add_edge("127.0.0.3","127.0.0.2",8)
+g.add_edge("127.0.0.4","127.0.0.1",9)
+g.add_edge("127.0.0.4","127.0.0.4",12)
+g.add_edge("127.0.0.5","127.0.0.3",19)
 
 
 if __name__ == "__main__":
+    print("ola")
+    g.print_graph()
+    print('ole')
+    #g.remove_peer_lig("127.0.0.3")
+    print(g.out_of_neighbor("127.0.0.5"))
+    #print("separação")
+    g.print_graph()
 
-    
+    sleep(20)
     _thread.start_new_thread(serverComm,())
     
 

@@ -8,6 +8,7 @@ import threading
 import mysql.connector
 import struct
 from routing.dijkstra import Graph
+from testes_do_joao import disconnect
 
 host = '127.0.0.1'  # Standard loopback interface address (localhost)
 port = 9999     # Port to listen on (non-privileged ports are > 1023)
@@ -15,13 +16,20 @@ port = 9999     # Port to listen on (non-privileged ports are > 1023)
 #qnt de vizinhos atribuidos a peer
 check_topologia = 0
 N = 2
-variavel_broadcast = 0
+variavel_broadcast_out = 0
+variavel_broadcast_in = 0
 lista_mensagens = []
 verificar_mensagens = []
 lock = threading.Lock()
-N_thread = 0
+#numero de thread e define ids de cada thread(peer)
 threadCount = 0
-peers_connected = 0
+#id do que saiu para saber que aquela thread nao precisa de enviar que se desconectou ou conectou
+id_broadcast_out = -1
+id_broadcast_in = -1
+#contar para saber quantos peers entraram na broadcast e fechar metodo qnd todos efetuarem isso
+count_for_broadcast_out = 0
+count_for_broadcast_in = 0
+grafo = []
 
 g = Graph()
 
@@ -35,7 +43,7 @@ mydb = mysql.connector.connect(
 )
 
 mycursor = mydb.cursor()
-
+    
 
 def getTime():
     c = ntplib.NTPClient()
@@ -73,13 +81,21 @@ def connection_ended(ip):
     return c_end
 
 #tpm 5
-def starting_peer(ip):
+def connection_started(ip):
     con_ended = bytearray(1)
     con_ended[0] = 5
     array = ip.split(".")
-
     for a in range(len(array)):
         con_ended.append(int(array[a]))
+
+def check_if_peer_is_out_of_neighbor():
+    out_neigh = []
+    ligacoes = g.get_graph_em_forma_de_array()
+    topologia = g.get_vertices()
+    for a in topologia:
+        if a is not ligacoes:
+            out_neigh.append(a)
+    return out_neigh
 
 
 def add_peer_database(id,ip,porta,status):
@@ -115,7 +131,6 @@ def qnt_peers_on():
     return soma
 
 def get_ip_neighbor(id1):
-    print("get_ip_neigh ->"+str(id1))
     sql = "SELECT ip FROM peer WHERE id = "+str(id1)+""
     mycursor.execute(sql)
     aux = mycursor.fetchall()
@@ -146,7 +161,6 @@ def interpretar_trama_custo(b_array):   #tpm, n_viz ; ip dele; ip vizinho; custo
 def atribuir_vizinhos(id):
     print("vou atribuir vizinhos id: "+str(id))
     numero_ids = []
-    print(threadCount)
     if qnt_peers_on() == 2:
         a = 0
         while a != 1:
@@ -169,7 +183,6 @@ def atribuir_vizinhos(id):
                 a = a - 1
         return numero_ids
 
-check_topologia = 0
 
 def thread_listening(connect, n_t):
     while True:
@@ -183,20 +196,32 @@ def thread_listening(connect, n_t):
 
 def thread_client(connection,n_thread, listening_port):
     verificar_mensagens[n_thread] = 0
+
     global check_topologia
-    global variavel_broadcast
+    global variavel_broadcast_out
+    global variavel_broadcast_in
+    global id_broadcast_out
+    global count_for_broadcast_out
+    global count_for_broadcast_in
+    global id_broadcast_in
+
     broadcast_enc = 0
+    broadcast_for_out = 0
+    broadcast_for__in = 0
+
     start_new_thread(thread_listening,(connection, n_thread,))
+
     while True:
         #interpretar data de modo a ver o que o peer quer fazer, ou conectar ou desconectar
         lock.acquire()
         if verificar_mensagens[n_thread] == 1:
             data = lista_mensagens[n_thread]
-            print("sou a data que vais interpretar:"+str(data))
+            print("sou a data que vais interpretar:" + str(data))
             if data[0] == 0:
+                variavel_broadcast_in = 1
+                check_topologia = 0
                 aux = True
                 set_status_on(n_thread)
-                #peers_connected = peers_connected + 1
                 if qnt_peers_on() == 1:
                     connection.send(b'-1')
                     aux = False
@@ -207,65 +232,81 @@ def thread_client(connection,n_thread, listening_port):
                     viz_ids = atribuir_vizinhos(n_thread)
                     if viz_ids is None:
                         print("Esperar por mais conexões para iniciar rede overlay vizinhos")
-                    else: 
+                    else:
                         if qnt_peers_on() == 2:
                             print("tenho 2")
                             #enviar apenas um vizinho, o 2 ip vai com 0.0.0.0 e porta a 0
                             ip1 = get_ip_neighbor(viz_ids[0])
-                            packet = send_neighbors(1, ip1, '0')
+                            packet = send_neighbors(1, ip1,'0')
                         else:
                             ip1 = get_ip_neighbor(viz_ids[0])
                             ip2 = get_ip_neighbor(viz_ids[1])
+                           
+                            
                             packet = send_neighbors(2, ip1,ip2)
                         connection.send(packet)
                         sleep(0.1)
                 #connection.send(send_neighbors("120.20","121.1","122.2",5,4,3))
                     
-            elif data[0] == 1:
+            elif data[0] == 1:  #alguem se desconectou
                 print("Desconectou-se")
-                # interpretar trama 
-                # desbloquear a variavel global para toda a gente enviar
-                # atualizar base de dados
-                # ver se peer tem vizinhos 
-                # remover na topologia peer que saiu
-                # remover as ligações 
-                connection.send("ole".encode('utf-8'))
-                variavel_broadcast = 1
-            elif data[0] == 3:
+                connection.send(b'-2')
+                set_status_off(n_thread)
+                g.remove_peer(get_ip_neighbor(n_thread))
+                variavel_broadcast_out = 1
+                id_broadcast_out = n_thread
+                check_topologia = 0
+            
+            elif data[0] == 3:  #pacote com custo
                 print("recebi um pacote de encaminhamaneto: "+ str(n_thread)) #interpreto; guardo numa matriz global tpm1;n_viz1;ip4;ip4;custo4
                 n_vizinhos = data[1]
                 for a in range(n_vizinhos):
                     if a == 0:
                         ip_peer,ip_viz,custo = interpretar_trama_custo(data[2:18])
-                        print(ip_peer+", "+ ip_viz+"-> "+str(custo))
+                        #print(ip_peer+", "+ ip_viz+"-> "+str(custo))
                         g.add_edge(ip_peer,ip_viz,custo)
                     if a == 1:
                         print(data[18:30])
                         ip_peer,ip_viz,custo = interpretar_trama_custo(data[18:34])
-                        print(ip_peer+", "+ ip_viz+"-> "+str(custo))
+                        #print(ip_peer+", "+ ip_viz+"-> "+str(custo))
                         g.add_edge(ip_peer,ip_viz,custo)
-                print("grafo->")
+                print("grafo ->")
                 g.print_graph()
+
                 check_topologia = check_topologia + 1
                 broadcast_enc = 1
-            print("n topologia:"+str(check_topologia))
+                broadcast_for__in = 1
+                broadcast_for_out = 1
+                id_broadcast_in = n_thread
+
+            print("n topologia:" + str(check_topologia))
             verificar_mensagens[n_thread] = 0
             
-            if check_topologia == qnt_peers_on() and broadcast_enc == 1:
-                #enviar o grafo
-                connection.send("ole".encode('utf-8'))
-                print("entrei e agora vou sair"+str(n_thread))
-                broadcast_enc = 0
-            else:
-                connection.send("wait".encode('utf-8'))
+        if check_topologia == qnt_peers_on() and broadcast_enc == 1:
+            #enviar o grafo
+            connection.send("ole".encode('utf-8'))
+            print("entrei e agora vou sair"+str(n_thread))
+            broadcast_enc = 0
+        
+        if variavel_broadcast_out == 1 and n_thread != id_broadcast_out and broadcast_for_out == 1:
+            count_for_broadcast_out = count_for_broadcast_out + 1
+            if count_for_broadcast_out == qnt_peers_on():
+                count_for_broadcast_out = 0
+                variavel_broadcast_out = 0
+                id_broadcast_out = -1
+            connection.send(connection_ended(get_ip_neighbor(id_broadcast_out)))
+
+        if variavel_broadcast_in == 2 and n_thread != id_broadcast_in and broadcast_for__in == 1:
+            #avisar que desconectou
+            count_for_broadcast_in = count_for_broadcast_in + 1
+            if count_for_broadcast_out == qnt_peers_on():
+                count_for_broadcast_in = 0
+                variavel_broadcast_in = 0
+                id_broadcast_in = -1
+            connection.send(connection_started(get_ip_neighbor(id_broadcast_out)))
+        
         lock.release()
          
-        if variavel_broadcast == 1:
-            #avisar que conectou
-            connection.send('mudei esta variavel maltinha')
-        if variavel_broadcast == 2:
-            #avisar que desconectou
-            connection.send('mudei variavel')
     connection.close()
 
 
