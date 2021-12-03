@@ -248,6 +248,7 @@ def thread_client(connection,n_thread, listening_port):
     broadcast_enc = 0
     broadcast_for_out = 0
     broadcast_for__in = 0
+    primeiro = 0
 
     start_new_thread(thread_listening,(connection, n_thread,))
 
@@ -267,6 +268,8 @@ def thread_client(connection,n_thread, listening_port):
                     print("entrei aqui")
                     connection.send(b'-1')
                     aux = False
+                    fui_o_primeiro = 1
+                    primeiro = 1
                 print("tpm 0")
                 if aux:
                     g.add_vertex(get_ip_neighbor(n_thread))
@@ -280,6 +283,7 @@ def thread_client(connection,n_thread, listening_port):
                             #enviar apenas um vizinho, o 2 ip vai com 0.0.0.0 e porta a 0
                             ip1 = get_ip_neighbor(viz_ids[0])
                             packet = send_neighbors(1, ip1,'0')
+                            fui_o_primeiro = 0
                         else:
                             ip1 = get_ip_neighbor(viz_ids[0])
                             ip2 = get_ip_neighbor(viz_ids[1])
@@ -366,7 +370,7 @@ def thread_client(connection,n_thread, listening_port):
                 id_broadcast_in = -1
             connection.send(connection_started(get_ip_neighbor(id_broadcast_in)))
         
-        if fui_o_primeiro == 0:
+        if fui_o_primeiro == 0 and primeiro == 1:
             viz_ids = []
             viz_ids = atribuir_vizinhos(n_thread)
             if qnt_peers_on() == 2:
@@ -379,6 +383,7 @@ def thread_client(connection,n_thread, listening_port):
                 ip2 = get_ip_neighbor(viz_ids[1])
                 packet = send_neighbors(2, ip1,ip2)
             fui_o_primeiro = -1
+            primeiro = 0
             connection.send(packet)
 
         lock.release()
