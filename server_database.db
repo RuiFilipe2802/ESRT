@@ -1,0 +1,9 @@
+DROP TABLE IF EXISTS peer
+CREATE TABLE peer(
+    id integer PRIMARY KEY,
+    ip text,
+    porta integer,
+    status integer
+);
+
+
