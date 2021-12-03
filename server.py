@@ -336,6 +336,7 @@ def thread_client(connection,n_thread, listening_port):
             broadcast_enc = 0
         
         if variavel_broadcast_out == 1 and n_thread != id_broadcast_out and broadcast_for_out == 1:
+            print("Enviar 13 porque alguem se conectou esta é a trhea "+str(n_thread)+"conectou-se a thread"+(str(id_broadcast_out)))
             connection.send(connection_ended(get_ip_neighbor(id_broadcast_out)))
             count_for_broadcast_out = count_for_broadcast_out + 1
             if qnt_peers_on() == 1:
@@ -364,6 +365,7 @@ def thread_client(connection,n_thread, listening_port):
 
         if variavel_broadcast_in == 2 and n_thread != id_broadcast_in and broadcast_for__in == 1:
             #avisar que se conectou
+            print("Enviar 12 porque alguem se conectou esta é a trhea "+str(n_thread)+"conectou-se a thread"+(str(id_broadcast_in)))
             count_for_broadcast_in = count_for_broadcast_in + 1
             broadcast_for__in = 0
             if count_for_broadcast_out == qnt_peers_on():
