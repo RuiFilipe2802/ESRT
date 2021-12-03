@@ -32,6 +32,7 @@ id_broadcast_in = -1
 count_for_broadcast_out = 0
 count_for_broadcast_in = 0
 grafo = []
+fui_o_primeiro = -1
 
 g = Graph()
 
@@ -85,7 +86,7 @@ def send_neighbors( n_vizinhos, ip1, ip2):
 #tpm 4
 def connection_ended(ip):
     c_end = bytearray(1)
-    c_end.append(4)
+    c_end[9] = 13
     array = ip.split(".")
 
     for a in range(len(array)):
@@ -96,7 +97,7 @@ def connection_ended(ip):
 #tpm 5
 def connection_started(ip):
     con_ended = bytearray(1)
-    con_ended[0] = 5
+    con_ended[0] = 12
     array = ip.split(".")
     for a in range(len(array)):
         con_ended.append(int(array[a]))
@@ -282,7 +283,6 @@ def thread_client(connection,n_thread, listening_port):
                             ip1 = get_ip_neighbor(viz_ids[0])
                             ip2 = get_ip_neighbor(viz_ids[1])
                            
-                            
                             packet = send_neighbors(2, ip1,ip2)
                         connection.send(packet)
                         sleep(0.1)
@@ -304,6 +304,7 @@ def thread_client(connection,n_thread, listening_port):
                         ip_peer,ip_viz,custo = interpretar_trama_custo(data[2:18])
                         #print(ip_peer+", "+ ip_viz+"-> "+str(custo))
                         g.add_edge(ip_peer,ip_viz,custo)
+                        fui_o_primeiro = 0
                     if a == 1:
                         print(data[18:30])
                         ip_peer,ip_viz,custo = interpretar_trama_custo(data[18:34])
@@ -330,29 +331,33 @@ def thread_client(connection,n_thread, listening_port):
             broadcast_enc = 0
         
         if variavel_broadcast_out == 1 and n_thread != id_broadcast_out and broadcast_for_out == 1:
+            connection.send(connection_ended(get_ip_neighbor(id_broadcast_out)))
             count_for_broadcast_out = count_for_broadcast_out + 1
-            if g.out_of_neighbor(get_ip_neighbor(n_thread)):
-                viz_ids = []
-                viz_ids = atribuir_vizinhos(n_thread)
-                if qnt_peers_on() == 2:
-                    print("tenho 2")
-                    #enviar apenas um vizinho, o 2 ip vai com 0.0.0.0 e porta a 0
-                    ip1 = get_ip_neighbor(viz_ids[0])
-                    packet = send_neighbors(1, ip1,'0')
-                else:
-                    ip1 = get_ip_neighbor(viz_ids[0])
-                    ip2 = get_ip_neighbor(viz_ids[1])
-                    packet = send_neighbors(2, ip1,ip2)
-                connection.send(packet)
+            if qnt_peers_on() == 1:
+                connection.send(b'-1')
+                fui_o_primeiro = 1
             else:
-                connection.send(connection_ended(get_ip_neighbor(id_broadcast_out)))
+                if g.out_of_neighbor(get_ip_neighbor(n_thread)):
+                    viz_ids = []
+                    viz_ids = atribuir_vizinhos(n_thread)
+                    if qnt_peers_on() == 2:
+                        print("tenho 2")
+                        #enviar apenas um vizinho, o 2 ip vai com 0.0.0.0 e porta a 0
+                        ip1 = get_ip_neighbor(viz_ids[0])
+                        packet = send_neighbors(1, ip1,'0')
+                    else:
+                        ip1 = get_ip_neighbor(viz_ids[0])
+                        ip2 = get_ip_neighbor(viz_ids[1])
+                        packet = send_neighbors(2, ip1,ip2)
+                    connection.send(packet)
+
             if count_for_broadcast_out == qnt_peers_on():
                 count_for_broadcast_out = 0
                 variavel_broadcast_out = 0
                 id_broadcast_out = -1
 
         if variavel_broadcast_in == 2 and n_thread != id_broadcast_in and broadcast_for__in == 1:
-            #avisar que desconectou
+            #avisar que se conectou
             count_for_broadcast_in = count_for_broadcast_in + 1
             if count_for_broadcast_out == qnt_peers_on():
                 count_for_broadcast_in = 0
@@ -360,6 +365,21 @@ def thread_client(connection,n_thread, listening_port):
                 id_broadcast_in = -1
             connection.send(connection_started(get_ip_neighbor(id_broadcast_in)))
         
+        if fui_o_primeiro == 0:
+            viz_ids = []
+            viz_ids = atribuir_vizinhos(n_thread)
+            if qnt_peers_on() == 2:
+                print("tenho 2")
+                #enviar apenas um vizinho, o 2 ip vai com 0.0.0.0 e porta a 0
+                ip1 = get_ip_neighbor(viz_ids[0])
+                packet = send_neighbors(1, ip1,'0')
+            else:
+                ip1 = get_ip_neighbor(viz_ids[0])
+                ip2 = get_ip_neighbor(viz_ids[1])
+                packet = send_neighbors(2, ip1,ip2)
+            fui_o_primeiro = -1
+            connection.send(packet)
+
         lock.release()
          
     connection.close()
