@@ -355,6 +355,7 @@ def thread_client(connection,n_thread, listening_port):
                         ip2 = get_ip_neighbor(viz_ids[1])
                         packet = send_neighbors(2, ip1,ip2)
                     connection.send(packet)
+            broadcast_for_out = 0
 
             if count_for_broadcast_out == qnt_peers_on():
                 count_for_broadcast_out = 0
@@ -364,6 +365,7 @@ def thread_client(connection,n_thread, listening_port):
         if variavel_broadcast_in == 2 and n_thread != id_broadcast_in and broadcast_for__in == 1:
             #avisar que se conectou
             count_for_broadcast_in = count_for_broadcast_in + 1
+            broadcast_for__in = 0
             if count_for_broadcast_out == qnt_peers_on():
                 count_for_broadcast_in = 0
                 variavel_broadcast_in = 0
