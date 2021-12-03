@@ -243,6 +243,7 @@ def thread_client(connection,n_thread, listening_port):
     global count_for_broadcast_out
     global count_for_broadcast_in
     global id_broadcast_in
+    global fui_o_primeiro
 
     broadcast_enc = 0
     broadcast_for_out = 0
