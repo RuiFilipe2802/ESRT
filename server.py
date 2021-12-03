@@ -96,11 +96,12 @@ def connection_ended(ip):
 
 #tpm 5
 def connection_started(ip):
-    con_ended = bytearray(1)
-    con_ended[0] = 12
+    con_started = bytearray(1)
+    con_started[0] = 12
     array = ip.split(".")
     for a in range(len(array)):
-        con_ended.append(int(array[a]))
+        con_started.append(int(array[a]))
+    return con_started
 
 def check_if_peer_is_out_of_neighbor():
     out_neigh = []
@@ -374,7 +375,8 @@ def thread_client(connection,n_thread, listening_port):
                 count_for_broadcast_in = 0
                 variavel_broadcast_in = 0
                 id_broadcast_in = -1
-            connection.send(connection_started(get_ip_neighbor(id_broadcast_in)))
+            packet = connection_started(get_ip_neighbor(id_broadcast_in))
+            connection.send(packet)
         
         if fui_o_primeiro == 0 and primeiro == 1:
             viz_ids = []
