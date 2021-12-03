@@ -136,8 +136,10 @@ def verificar_status(b):
     sql = "SELECT status FROM peer WHERE id = "+str(b)+""
     mycursor.execute(sql)
     aux = mycursor.fetchone()
+    print(aux)
     aux1 = str(aux[0])
     status = int(aux1.strip("[").strip("(").strip("'").strip(")").strip("]").strip(",").strip("'"))
+    print(status)
     if status == 0:
         return False
     else: 
