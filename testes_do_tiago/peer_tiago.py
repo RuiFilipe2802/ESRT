@@ -176,8 +176,17 @@ def set_routing_table(packet,ip_source):
         array_topologia [counter][0] = socket.inet_ntoa(array_ip1)
         array_ip2 = topologia[4+contador:8+contador]
         array_topologia [counter][1] = socket.inet_ntoa(array_ip2)
-        array_topologia [counter][2] = int(topologia[8+contador])
-        contador +=9
+        inteiro = topologia[8+contador:12+contador]
+        decimal = topologia[12+contador:16+contador]
+        tamanho = len(str(decimal))
+        x = 0
+        while x < decimal:
+            decimal = decimal/10 
+            x = x + 1
+        inteiro = inteiro + decimal
+        #print(inteiro)
+        array_topologia [counter][2] = float(inteiro)
+        contador +=12
         counter += 1
 
     return routing_table_calculation(array_topologia,ip_source)
@@ -200,6 +209,8 @@ def send_normal_data(packet,ip_source):
 
 #   CHECKS COSTS t=5s
 def check_costs():
+    while len(ip_neighbours) == 0:
+        pass
     while 1:
         sleep(5)
         mudou = 0
@@ -209,6 +220,7 @@ def check_costs():
                     socket2 = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
                     pacote = timeCalc(ip_source)
                     socket2.sendto(pacote,(ip,5000))
+        sleep(5)
         for ip in ip_neighbours:
             if(cost_stored[ip_neighbours[ip]]<neighbours[ip_neighbours[ip]]):
                 neighbours[ip_neighbours[ip]] = cost_stored[ip_neighbours[ip]]
@@ -228,6 +240,7 @@ def serverComm():
     ip_source = ipOrigin
     print(ip_source)
     _thread.start_new_thread(peerListener,(ip_source,))
+    _thread.start_new_thread(sendCosts,())
 
     print('Non Blocking - connecting')
     ret = ClientSocket.connect_ex((HOST,PORT_TCP)) #BLOCKING
