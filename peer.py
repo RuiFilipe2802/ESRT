@@ -270,7 +270,7 @@ def sendData(msg,ip):
     print(msg)
     print(ip)
     pacote = bytearray(1)
-    pacote[0] = 31
+    pacote[0] = 21
     array = ip.split(".")
     for a in range(len(array)):
         pacote.append(int(array[a]))
@@ -452,7 +452,7 @@ def peerListener(ip_src):
                 enviar = '4' 
                 costsGuardados = 0
                 pacote12 = 0
-        elif(data[0] == 31):
+        elif(data[0] == 21):
             ip_enviar = next_data_hop(data)
             if(ip_enviar != 1):
                 socketEnvio = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
