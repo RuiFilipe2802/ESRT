@@ -12,7 +12,7 @@ from testes_do_joao import disconnect
 import sqlite3
 from sqlite3 import Error
 
-host = '127.0.0.1'  # Standard loopback interface address (localhost)
+host = '10.0.5.3'  # Standard loopback interface address (localhost)
 port = 9999     # Port to listen on (non-privileged ports are > 1023)
 
 #qnt de vizinhos atribuidos a peer
@@ -86,7 +86,7 @@ def send_neighbors( n_vizinhos, ip1, ip2):
 #tpm 4
 def connection_ended(ip):
     c_end = bytearray(1)
-    c_end[9] = 13
+    c_end[0] = 13
     array = ip.split(".")
 
     for a in range(len(array)):
@@ -127,7 +127,6 @@ def set_status_on(id):
     mydb.commit()
     
 
-
 def set_status_off(id):
     sql = "UPDATE peer set status = 0 WHERE id = "+str(id)
     mycursor.execute(sql)
@@ -144,7 +143,6 @@ def verificar_status(b):
         return False
     else: 
         return True
-    
 
 def qnt_peers_on():
     soma = 0
@@ -192,14 +190,14 @@ def trama_grafo(array):
                 trama.extend(buf)
             else:
                 ip = array[i][j].split(".")
-                print(ip)
+                #print(ip)
                 for a in range(len(ip)):
                     trama.append(int(ip[a]))
     return trama
     
     
 def atribuir_vizinhos(id):
-    print("vou atribuir vizinhos id: "+str(id))
+    #print("vou atribuir vizinhos id: "+str(id))
     numero_ids = []
     if qnt_peers_on() == 2:
         a = 0
@@ -212,7 +210,7 @@ def atribuir_vizinhos(id):
                 a = a - 1
         return numero_ids
     else:
-        print(str(id) + " <-id; threadcount->" + str(threadCount))
+        #print(str(id) + " <-id; threadcount->" + str(threadCount))
         a = 0
         while a != 2:
             a += 1
@@ -226,12 +224,14 @@ def atribuir_vizinhos(id):
 
 def thread_listening(connect, n_t):
     while True:
-        print("vou ouvir: "+str(n_t))
+        #print("vou ouvir: "+str(n_t))
         data = connect.recv(2048)
-        print("liberado ouvi :"+str(n_t))
+        print('DATA : ' + str(data))
+        print('\n')
+        #print("liberado ouvi :"+str(n_t))
         verificar_mensagens[n_t] = 1
         lista_mensagens[n_t] = data
-        print(str(lista_mensagens[n_t]) + " numero: "+ str(n_t))
+        #print(str(lista_mensagens[n_t]) + " numero: "+ str(n_t))
 
 
 def thread_client(connection,n_thread, listening_port):
@@ -255,10 +255,10 @@ def thread_client(connection,n_thread, listening_port):
 
     while True:
         #interpretar data de modo a ver o que o peer quer fazer, ou conectar ou desconectar
-        lock.acquire()
+        lock.acquire(True)
         if verificar_mensagens[n_thread] == 1:
             data = lista_mensagens[n_thread]
-            print("sou a data que vais interpretar:" + str(data))
+            #print("sou a data que vais interpretar:" + str(data) + 'nThread: '+str(n_thread))
             if data[0] == 0:
                 variavel_broadcast_in = 1
                 broadcast_for__in = 1
@@ -273,7 +273,7 @@ def thread_client(connection,n_thread, listening_port):
                     aux = False
                     fui_o_primeiro = 1
                     primeiro = 1
-                print("tpm 0")
+                #print("tpm 0")
                 if aux:
                     g.add_vertex(get_ip_neighbor(n_thread))
                     viz_ids = []
@@ -282,7 +282,7 @@ def thread_client(connection,n_thread, listening_port):
                         print("Esperar por mais conexões para iniciar rede overlay vizinhos")
                     else:
                         if qnt_peers_on() == 2:
-                            print("tenho 2")
+                            #print("tenho 2")
                             #enviar apenas um vizinho, o 2 ip vai com 0.0.0.0 e porta a 0
                             ip1 = get_ip_neighbor(viz_ids[0])
                             packet = send_neighbors(1, ip1,'0')
@@ -323,23 +323,44 @@ def thread_client(connection,n_thread, listening_port):
 
                 check_topologia = check_topologia + 1
                 broadcast_enc = 1
-                id_broadcast_in = n_thread
+                #id_broadcast_in = n_thread
 
             print("n topologia:" + str(check_topologia))
             verificar_mensagens[n_thread] = 0
+        
+        if fui_o_primeiro == 0 and primeiro == 1:
+            #print('ENTREI NO IF FUI O PRIMEIRO nthread : %d' % n_thread)
+            viz_ids = []
+            viz_ids = atribuir_vizinhos(n_thread)
+            if qnt_peers_on() == 2:
+                #print("tenho 2")
+                #enviar apenas um vizinho, o 2 ip vai com 0.0.0.0 e porta a 0
+                ip1 = get_ip_neighbor(viz_ids[0])
+                packet = send_neighbors(1, ip1,'0')
+            else:
+                ip1 = get_ip_neighbor(viz_ids[0])
+                ip2 = get_ip_neighbor(viz_ids[1])
+                packet = send_neighbors(2, ip1,ip2)
+            fui_o_primeiro = -1
+            primeiro = 0
+            connection.send(packet)
+            print(packet)
+            sleep(0.1)
             
         if check_topologia == qnt_peers_on() and broadcast_enc == 1:
+            print('ENTROU A THREAD N: ' + str(n_thread))
             #enviar o grafo
             broadcast_for__in = 1
             broadcast_for_out = 1
             topologia = g.get_graph_em_forma_de_array()
             packet = trama_grafo(topologia)
+            print('MANDEI O 11')
             connection.send(packet)
-            print("entrei e agora vou sair"+str(n_thread))
+            #print("entrei e agora vou sair"+str(n_thread))
             broadcast_enc = 0
         
         if variavel_broadcast_out == 1 and n_thread != id_broadcast_out and broadcast_for_out == 1:
-            print("Enviar 13 porque alguem se conectou esta é a trhea "+str(n_thread)+"conectou-se a thread"+(str(id_broadcast_out)))
+            print("Enviar 13 porque alguem se desconectou esta é a trhea "+str(n_thread)+"conectou-se a thread"+(str(id_broadcast_out)))
             connection.send(connection_ended(get_ip_neighbor(id_broadcast_out)))
             count_for_broadcast_out = count_for_broadcast_out + 1
             if qnt_peers_on() == 1:
@@ -368,33 +389,23 @@ def thread_client(connection,n_thread, listening_port):
 
         if variavel_broadcast_in == 1 and n_thread != id_broadcast_in and broadcast_for__in == 1:
             #avisar que se conectou
+            packet = connection_started(get_ip_neighbor(id_broadcast_in))
+            connection.send(packet)
+            #sleep(0.1)
             print("Enviar 12 porque alguem se conectou esta é a thread "+str(n_thread)+"conectou-se a thread"+(str(id_broadcast_in)))
+            #print(packet)
             count_for_broadcast_in = count_for_broadcast_in + 1
+            #print('BROADCAST FOR IN '+str(broadcast_for__in) + 'nTHREAD : '+str(n_thread))
             broadcast_for__in = 0
-            if count_for_broadcast_out == qnt_peers_on():
+            #print('COUNT = ' + str(count_for_broadcast_in) + ', QUANT. PEERS ON: ' + str(qnt_peers_on()) + ', BROADCAST FOR IN: '+str(broadcast_for__in))
+            if count_for_broadcast_in == qnt_peers_on() - 1:
+                #print('SO ENTREI 1 VEZ')
                 count_for_broadcast_in = 0
                 variavel_broadcast_in = 0
                 id_broadcast_in = -1
-            packet = connection_started(get_ip_neighbor(id_broadcast_in))
-            connection.send(packet)
-        
-        if fui_o_primeiro == 0 and primeiro == 1:
-            viz_ids = []
-            viz_ids = atribuir_vizinhos(n_thread)
-            if qnt_peers_on() == 2:
-                print("tenho 2")
-                #enviar apenas um vizinho, o 2 ip vai com 0.0.0.0 e porta a 0
-                ip1 = get_ip_neighbor(viz_ids[0])
-                packet = send_neighbors(1, ip1,'0')
-            else:
-                ip1 = get_ip_neighbor(viz_ids[0])
-                ip2 = get_ip_neighbor(viz_ids[1])
-                packet = send_neighbors(2, ip1,ip2)
-            fui_o_primeiro = -1
-            primeiro = 0
-            connection.send(packet)
 
         lock.release()
+        sleep(0.2)
          
     connection.close()
 
@@ -424,4 +435,3 @@ if __name__ == "__main__":
         portas_peer +=1
         print('Thread Number: ' + str(threadCount))
     ServerSocket.close()
-    
