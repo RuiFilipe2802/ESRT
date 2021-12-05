@@ -33,6 +33,8 @@ count_for_broadcast_out = 0
 count_for_broadcast_in = 0
 grafo = []
 fui_o_primeiro = -1
+mudou_custo = 0
+count_for_cust = 0
 
 g = Graph()
 
@@ -245,10 +247,13 @@ def thread_client(connection,n_thread, listening_port):
     global count_for_broadcast_in
     global id_broadcast_in
     global fui_o_primeiro
+    global mudou_custo
+    global count_for_cust
 
     broadcast_enc = 0
     broadcast_for_out = 0
     broadcast_for__in = 0
+    broadcasr_for_custo = 0
     primeiro = 0
 
     start_new_thread(thread_listening,(connection, n_thread,))
@@ -263,6 +268,7 @@ def thread_client(connection,n_thread, listening_port):
                 variavel_broadcast_in = 1
                 broadcast_for__in = 1
                 broadcast_for_out = 1
+                broadcasr_for_custo = 1
                 check_topologia = 0
                 id_broadcast_in = n_thread
                 aux = True
@@ -324,6 +330,10 @@ def thread_client(connection,n_thread, listening_port):
                 check_topologia = check_topologia + 1
                 broadcast_enc = 1
                 #id_broadcast_in = n_thread
+            
+            elif data[0] == 5:
+                mudou_custo = 1
+
 
             print("n topologia:" + str(check_topologia))
             verificar_mensagens[n_thread] = 0
@@ -352,6 +362,7 @@ def thread_client(connection,n_thread, listening_port):
             #enviar o grafo
             broadcast_for__in = 1
             broadcast_for_out = 1
+            broadcasr_for_custo = 1
             topologia = g.get_graph_em_forma_de_array()
             packet = trama_grafo(topologia)
             print('MANDEI O 11')
@@ -403,6 +414,16 @@ def thread_client(connection,n_thread, listening_port):
                 count_for_broadcast_in = 0
                 variavel_broadcast_in = 0
                 id_broadcast_in = -1
+            
+            if mudou_custo == 1 and broadcasr_for_custo == 1:
+                packet = bytearray(0)
+                packet.append(12)
+                connection.send(packet)
+                count_for_cust += 1
+                broadcasr_for_custo = 0
+                if count_for_cust == qnt_peers_on():
+                    count_for_cust = 0
+                    mudou_custo = 0
 
         lock.release()
         sleep(0.2)
