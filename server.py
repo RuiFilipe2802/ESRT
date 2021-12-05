@@ -82,7 +82,7 @@ def send_neighbors( n_vizinhos, ip1, ip2):
     for c in range(len(array3)):
         send.append(int(array3[c]))
 
-    print(send)
+    #print(send)
     return send
 
 #tpm 4
@@ -229,7 +229,7 @@ def thread_listening(connect, n_t):
         #print("vou ouvir: "+str(n_t))
         data = connect.recv(2048)
         print('DATA : ' + str(data))
-        print('\n')
+        #print('\n')
         #print("liberado ouvi :"+str(n_t))
         verificar_mensagens[n_t] = 1
         lista_mensagens[n_t] = data
@@ -274,7 +274,7 @@ def thread_client(connection,n_thread, listening_port):
                 aux = True
                 set_status_on(n_thread)
                 if qnt_peers_on() == 1:
-                    print("entrei aqui")
+                    #print("entrei aqui")
                     connection.send(b'-1')
                     aux = False
                     fui_o_primeiro = 1
@@ -320,7 +320,7 @@ def thread_client(connection,n_thread, listening_port):
                         g.add_edge(ip_peer,ip_viz,custo)
                         fui_o_primeiro = 0
                     if a == 1:
-                        print(data[18:30])
+                        #print(data[18:30])
                         ip_peer,ip_viz,custo = interpretar_trama_custo(data[18:34])
                         #print(ip_peer+", "+ ip_viz+"-> "+str(custo))
                         g.add_edge(ip_peer,ip_viz,custo)
@@ -332,8 +332,9 @@ def thread_client(connection,n_thread, listening_port):
                 #id_broadcast_in = n_thread
             
             elif data[0] == 5:
+                #print('MANDA CUSTO = 1')
                 mudou_custo = 1
-
+                check_topologia = 0
 
             print("n topologia:" + str(check_topologia))
             verificar_mensagens[n_thread] = 0
@@ -371,7 +372,7 @@ def thread_client(connection,n_thread, listening_port):
             broadcast_enc = 0
         
         if variavel_broadcast_out == 1 and n_thread != id_broadcast_out and broadcast_for_out == 1:
-            print("Enviar 13 porque alguem se desconectou esta é a trhea "+str(n_thread)+"conectou-se a thread"+(str(id_broadcast_out)))
+            print("Enviar 13 porque alguem se desconectou esta é a trhea "+str(n_thread)+" desconectou-se a thread"+(str(id_broadcast_out)))
             connection.send(connection_ended(get_ip_neighbor(id_broadcast_out)))
             count_for_broadcast_out = count_for_broadcast_out + 1
             if qnt_peers_on() == 1:
@@ -382,7 +383,7 @@ def thread_client(connection,n_thread, listening_port):
                     viz_ids = []
                     viz_ids = atribuir_vizinhos(n_thread)
                     if qnt_peers_on() == 2:
-                        print("tenho 2")
+                        #print("tenho 2")
                         #enviar apenas um vizinho, o 2 ip vai com 0.0.0.0 e porta a 0
                         ip1 = get_ip_neighbor(viz_ids[0])
                         packet = send_neighbors(1, ip1,'0')
@@ -403,7 +404,7 @@ def thread_client(connection,n_thread, listening_port):
             packet = connection_started(get_ip_neighbor(id_broadcast_in))
             connection.send(packet)
             #sleep(0.1)
-            print("Enviar 12 porque alguem se conectou esta é a thread "+str(n_thread)+"conectou-se a thread"+(str(id_broadcast_in)))
+            print("Enviar 12 porque alguem se conectou esta é a thread "+str(n_thread)+" conectou-se a thread"+(str(id_broadcast_in)))
             #print(packet)
             count_for_broadcast_in = count_for_broadcast_in + 1
             #print('BROADCAST FOR IN '+str(broadcast_for__in) + 'nTHREAD : '+str(n_thread))
@@ -415,15 +416,16 @@ def thread_client(connection,n_thread, listening_port):
                 variavel_broadcast_in = 0
                 id_broadcast_in = -1
             
-            if mudou_custo == 1 and broadcasr_for_custo == 1:
-                packet = bytearray(0)
-                packet.append(12)
-                connection.send(packet)
-                count_for_cust += 1
-                broadcasr_for_custo = 0
-                if count_for_cust == qnt_peers_on():
-                    count_for_cust = 0
-                    mudou_custo = 0
+        if mudou_custo == 1 and broadcasr_for_custo == 1:
+            #print('ENTREI ONDE DEVIA ENTRAR')
+            packet = bytearray(0)
+            packet.append(12)
+            connection.send(packet)
+            count_for_cust += 1
+            broadcasr_for_custo = 0
+            if count_for_cust == qnt_peers_on():
+                count_for_cust = 0
+                mudou_custo = 0
 
         lock.release()
         sleep(0.2)

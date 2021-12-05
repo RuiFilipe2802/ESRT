@@ -129,7 +129,7 @@ class Graph:
             for w in v.get_connections():
                 vid = v.get_id()
                 wid = w.get_id()
-                print ('( %s , %s, %3d)'  % ( vid, wid, v.get_weight(w))) 
+                print ('( %s , %s, %f)'  % ( vid, wid, v.get_weight(w))) 
                 
 
     def get_graph_em_forma_de_array(self):

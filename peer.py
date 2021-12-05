@@ -210,7 +210,7 @@ def set_routing_table(packet):
 #   NEXT DATA HOP
 def next_data_hop(packet):
     ip_destino = socket.inet_ntoa(packet[1:5])
-    print('IP DESTINO :' + str(ip_destino))
+    #print('IP DESTINO :' + str(ip_destino))
     ip_rede_destino = ""
     if(ip_destino == ip_source):
         print('Chegou ao destino')
@@ -218,11 +218,11 @@ def next_data_hop(packet):
     else:
         global routing_table
         x = 0
-        print(np.matrix(routing_table))
+        #print(np.matrix(routing_table))
         while x < len(routing_table):
             if(ip_destino == routing_table[x][0]):
                 ip_rede_destino = routing_table[x][1]
-                print('IP REDE DESTINO :' + str(ip_rede_destino))
+                #print('IP REDE DESTINO :' + str(ip_rede_destino))
                 break
             x += 1
     return ip_rede_destino if len(ip_rede_destino) > 0 else 1
@@ -234,7 +234,7 @@ def check_costs():
     while len(ip_neighbours) == 0:
         pass
     while disconnect_var == 0:
-        sleep(30)
+        sleep(13)
         #print('ENTREI')
         mudou = 0
         #print(neighbours)
@@ -243,14 +243,14 @@ def check_costs():
                     socket2 = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
                     pacote = timeCalc(ip_source)
                     socket2.sendto(pacote,(ip,5000))
-        sleep(5)
+        sleep(2)
         #print('IP NEIGHBOURS -------> ')
         #print(neighbours)
         #print('|||||||||||||||| ENTREI |||||||||||||||')
         #print(cost_stored)
         for ip in ip_neighbours:
             #print('VALORES:')
-            x = 10*float(neighbours[ip])
+            x = 2*float(neighbours[ip])
             y = float(cost_stored[ip])
             #print(x<y)
             if(x < y):
@@ -259,24 +259,24 @@ def check_costs():
                 #print('MUDOU = 1')
         if(mudou == 1):
             #print('ENVIAR = 4')
-            lock.acquire(True)
+            #lock.acquire(True)
             enviar = '5'
-            lock.release()
+            #lock.release()
             #sleep(0.1)
 
 #   SEND DATA
 def sendData(msg,ip):
-    print('AQUI')
-    print(msg)
-    print(ip)
+    #print('AQUI')
+    #print(msg)
+    #print(ip)
     pacote = bytearray(1)
     pacote[0] = 21
     array = ip.split(".")
     for a in range(len(array)):
         pacote.append(int(array[a]))
     pacote[6:] = (bytearray(msg.encode()))
-    print('PACOTE:')
-    print(pacote)
+    #print('PACOTE:')
+    #print(pacote)
     return pacote
 
 def removePeer(peer):
@@ -340,12 +340,12 @@ def serverComm():
                 ClientSocket.send(packet)
                 enviar = 0
             elif(enviar == '4'):            # SEND COSTS FROM NEIGHBOURS
-                print('COSTS')
+                print('SEND COSTS')
                 packet = sendCosts(ipOrigin)
                 ClientSocket.send(packet) 
                 enviar = 0
-            elif(enviar == '5'):            # SEND COSTS FROM NEIGHBOURS
-                print('NOVOS COSTS')
+            elif(enviar == '5'):            # COSTS CHANGED
+                print('NEW COSTS')
                 packet = bytearray(1)
                 packet[0] = 5
                 array = ip_source.split(".")
@@ -357,17 +357,15 @@ def serverComm():
         for s in readable:
             #print(f'Non Blocking - reading...')
             res = ClientSocket.recv(1024)
-            #if (res):
-                #print(res)
             if(res[0] == 10):               # GET NEIGHBOURS
-                print('GET NEIGHBOURS')
+                #print('GET NEIGHBOURS')
                 #print('GET NEIGHBOURS')
                 ip_neighbours = getNeighbours(res)
                 #print(ip_neighbours)
-                print('ªªªªªªªªªªªªªªªªªª')
-                print(ip_neighbours)
+                #print('ªªªªªªªªªªªªªªªªªª')
+                #print(ip_neighbours)
                 pacote12 = 1
-                print(pacote12)
+                #print(pacote12)
                 for ip in ip_neighbours:
                     socket2 = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
                     pacote = timeCalc(ip_source)
@@ -379,22 +377,24 @@ def serverComm():
                 print(neighbours)
                 print('ROUTING TABLE :')
                 print(np.matrix(routing_table))
+
             elif(res[0] == 12):             # ask costs
-                print('ENTREI NO 12')
+                #print('ENTREI NO 12')
                 costsGuardados = 0
                 pacote12 = 1
                 for ip in ip_neighbours:
                     socket2 = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
                     pacote = timeCalc(ip_source)
                     socket2.sendto(pacote,(ip,5000))
+
             elif(res[0] == 13):             # remover ip dos neighbours se tiver
-                print('13')
+                #print('13')
                 array = res[1:5]
                 ip = socket.inet_ntoa(array)
                 if ip in ip_neighbours: ip_neighbours.remove(ip)
                 if ip in neighbours.keys(): neighbours.pop(ip)
                 nova_topologia = removePeer(ip)
-                #print(nova_topologia)
+                print('NOVA TOPOLOGIA:')
                 routing_table = routing_table_calculation(nova_topologia,ip_source)
                 print(np.matrix(routing_table))
 
@@ -445,14 +445,15 @@ def peerListener(ip_src):
             lock.acquire(True)
             costsGuardados += 1
             lock.release()
-            print('-----------------')
-            print('COSTS GUARDADOS : '+str(costsGuardados) + '\nlen Neig : ' + str(len(ip_neighbours)) + '\npacote12 : ' + str(pacote12))
+            #print('-----------------')
+            #print('COSTS GUARDADOS : '+str(costsGuardados) + '\nlen Neig : ' + str(len(ip_neighbours)) + '\npacote12 : ' + str(pacote12))
             if (costsGuardados == len(ip_neighbours) and pacote12 == 1):
-                print('ENTREI NOS COSTS GUARDADOS')
+                #print('ENTREI NOS COSTS GUARDADOS')
                 enviar = '4' 
                 costsGuardados = 0
                 pacote12 = 0
-        elif(data[0] == 21):
+
+        elif(data[0] == 21):            # DATA
             ip_enviar = next_data_hop(data)
             if(ip_enviar != 1):
                 socketEnvio = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -473,9 +474,9 @@ def fun_input():
             ip = input()
             packetData = sendData(mensagem.strip('\n'),ip.strip('\n'))
             ip_enviar = next_data_hop(packetData)
-            print('IP ENVIAR :' + str(ip_enviar))
+            #print('IP ENVIAR :' + str(ip_enviar))
             if(ip_enviar != 1):
-                print('ENTREI NO IF')
+                #print('ENTREI NO IF')
                 socketEnvio = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
                 socketEnvio.sendto(packetData,(ip_enviar,5000))
             
