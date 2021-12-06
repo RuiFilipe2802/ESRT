@@ -217,7 +217,9 @@ def atribuir_vizinhos(id):
         while a != 2:
             a += 1
             b = random.randint(0,threadCount - 1 )
-            if b != id and b not in numero_ids and verificar_status(b):
+            print('LIMITE DE NEIGHBOURS QUE PODE ESGOTAR '+ str(g.lim_of_neighbours(get_ip_neighbor(b))))
+            if b != id and b not in numero_ids and verificar_status(b) and g.lim_of_neighbours(get_ip_neighbor(b)) < 3:
+                print('LIMITE DE NEIGHBOURS '+ str(g.lim_of_neighbours(get_ip_neighbor(b))))
                 numero_ids.append(b)
             else:
                 a = a - 1
@@ -305,7 +307,7 @@ def thread_client(connection,n_thread, listening_port):
             elif data[0] == 1:  #alguem se desconectou
                 print("Desconectou-se")
                 set_status_off(n_thread)
-                g.remove_peer(get_ip_neighbor(n_thread))
+                g.remove_peer_lig(get_ip_neighbor(n_thread))
                 variavel_broadcast_out = 1
                 id_broadcast_out = n_thread
                 check_topologia = 0
@@ -358,7 +360,7 @@ def thread_client(connection,n_thread, listening_port):
             print(packet)
             sleep(0.1)
             
-        if check_topologia == qnt_peers_on() and broadcast_enc == 1:
+        if check_topologia == qnt_peers_on() and broadcast_enc == 1 and verificar_status(n_thread):
             print('ENTROU A THREAD N: ' + str(n_thread))
             #enviar o grafo
             broadcast_for__in = 1
@@ -371,8 +373,8 @@ def thread_client(connection,n_thread, listening_port):
             #print("entrei e agora vou sair"+str(n_thread))
             broadcast_enc = 0
         
-        if variavel_broadcast_out == 1 and n_thread != id_broadcast_out and broadcast_for_out == 1:
-            print("Enviar 13 porque alguem se desconectou esta é a trhea "+str(n_thread)+" desconectou-se a thread"+(str(id_broadcast_out)))
+        if variavel_broadcast_out == 1 and n_thread != id_broadcast_out and verificar_status(n_thread):
+            print("Enviar 13 porque alguem se desconectou esta é a trhea "+str(n_thread)+" desconectou-se a thread"+(str(id_broadcast_out)) + "STATUS NTHREAD :" + str(verificar_status(n_thread)))
             connection.send(connection_ended(get_ip_neighbor(id_broadcast_out)))
             count_for_broadcast_out = count_for_broadcast_out + 1
             if qnt_peers_on() == 1:
@@ -399,7 +401,7 @@ def thread_client(connection,n_thread, listening_port):
                 variavel_broadcast_out = 0
                 id_broadcast_out = -1
 
-        if variavel_broadcast_in == 1 and n_thread != id_broadcast_in and broadcast_for__in == 1:
+        if variavel_broadcast_in == 1 and n_thread != id_broadcast_in and verificar_status(n_thread):
             #avisar que se conectou
             packet = connection_started(get_ip_neighbor(id_broadcast_in))
             connection.send(packet)
@@ -416,8 +418,8 @@ def thread_client(connection,n_thread, listening_port):
                 variavel_broadcast_in = 0
                 id_broadcast_in = -1
             
-        if mudou_custo == 1 and broadcasr_for_custo == 1:
-            #print('ENTREI ONDE DEVIA ENTRAR')
+        if mudou_custo == 1 and verificar_status(n_thread):
+            print("Enviar 12 porque os custos mudaram esta é a thread "+str(n_thread))
             packet = bytearray(0)
             packet.append(12)
             connection.send(packet)

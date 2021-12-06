@@ -234,7 +234,7 @@ def check_costs():
     while len(ip_neighbours) == 0:
         pass
     while disconnect_var == 0:
-        sleep(13)
+        sleep(25)
         #print('ENTREI')
         mudou = 0
         #print(neighbours)
@@ -243,7 +243,7 @@ def check_costs():
                     socket2 = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
                     pacote = timeCalc(ip_source)
                     socket2.sendto(pacote,(ip,5000))
-        sleep(2)
+        sleep(5)
         #print('IP NEIGHBOURS -------> ')
         #print(neighbours)
         #print('|||||||||||||||| ENTREI |||||||||||||||')
@@ -330,6 +330,10 @@ def serverComm():
             elif(enviar == '2'):           # DISCONNECT 
                 print('DISCONNECT')
                 packet = disconnect(ipOrigin)
+                neighbours.clear()
+                ip_neighbours.clear()
+                print('IP NEIGHBOURS :' + str(ip_neighbours))
+                print('NEIGHBOURS :' + str(neighbours))
                 ClientSocket.send(packet)
                 #outputs.remove(ClientSocket)
                 enviar = 0
@@ -390,9 +394,16 @@ def serverComm():
             elif(res[0] == 13):             # remover ip dos neighbours se tiver
                 #print('13')
                 array = res[1:5]
+                print('ENTREI AQUI')
                 ip = socket.inet_ntoa(array)
+                print('NEIGHBOURS ANTES: ' + str(ip_neighbours))
+                print('DICIONARIO ANTES: ' + str(neighbours))
                 if ip in ip_neighbours: ip_neighbours.remove(ip)
-                if ip in neighbours.keys(): neighbours.pop(ip)
+                if ip in neighbours.keys():
+                    print('ENTREI NO DICIONARIO' + str(ip))
+                    neighbours.pop(ip)
+                print('NEIGHBOURS DEPOIS: ' + str(ip_neighbours))
+                print('DICIONARIO DEPOIS: ' + str(neighbours))
                 nova_topologia = removePeer(ip)
                 print('NOVA TOPOLOGIA:')
                 routing_table = routing_table_calculation(nova_topologia,ip_source)

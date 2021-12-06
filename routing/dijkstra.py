@@ -91,6 +91,9 @@ class Graph:
             return True
         else:
             return False
+
+    def lim_of_neighbours(self,ip):
+        return len(self.vert_dict[ip].get_connections())
         
 
     def remove_peer_lig(self,n):
