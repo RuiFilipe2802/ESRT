@@ -11,9 +11,10 @@ import mysql.connector
 import struct
 import sqlite3
 from sqlite3 import Error
+import select
 
 host = '127.0.0.1'  # Standard loopback interface address (localhost)
-port = 9999
+port = 9998
 
 verificar_mensagens = 0
 lista_mensagens = []
@@ -25,18 +26,18 @@ def thread_listening(connect, n_t):
     print("lets start2")
     while True:
         #print("vou ouvir: "+str(n_t))
-        try:
-            data = connect.recv(2048)
-            print('DATA : ' + str(data))
-            print('\n')
+        data = connect.recv(2048)
+        if len(data) == 0:
+            print("Cliente foi abaixo")
+            data = 25
             lista_mensagens[0] = data
             verificar_mensagens = 1
-
-        except socket.error:
-            print("crt c na listening")
+            sleep(5)
             break
-        #print("liberado ouvi :"+str(n_t))
-        #print(str(lista_mensagens[n_t]) + " numero: "+ str(n_t))
+        print('DATA : ' + str(data))
+        print('\n')
+        lista_mensagens[0] = data
+        verificar_mensagens = 1
     print("sai do fechei a socket" )
 
 
@@ -52,7 +53,7 @@ def thread_client(connection,n_thread, listening_port):
             print(lista_mensagens[0])
             print(data)
             verificar_mensagens = 0
-            if data[0] == 25:
+            if data == 25:
                 break
     print("sai do while true" )
     connection.close()
@@ -75,8 +76,9 @@ if __name__ == "__main__":
         Client, address = ServerSocket.accept()
         
         print('Connected to: ' + address[0] + ':' + str(address[1]))
-        start_new_thread(thread_client,(Client, threadCount,portas_peer,))
+        _thread.start_new_thread(thread_client,(Client, threadCount,portas_peer,))
         threadCount += 1
         portas_peer +=1
         print('Thread Number: ' + str(threadCount))
+    
     ServerSocket.close()

@@ -8,7 +8,7 @@ import sys
 import mysql.connector
 
 host = '127.0.0.1'  # Standard loopback interface address (localhost)
-port = 9999      # Port to listen on (non-privileged ports are > 1023)
+port = 9998      # Port to listen on (non-privileged ports are > 1023)
 port2 = 5000
 
 
@@ -20,10 +20,14 @@ def serverComm():
     except socket.error as e:
         print(str(e))
     while True:
-        ClientSocket.send(b'ola')
+        #ClientSocket.send(b'ola')
         #Input = input('Say Something: ')
         print("Ola")
         sleep(2)
+        ClientSocket.send(b'')
+        print("ja enviei")
+        sleep(10)
+        ClientSocket.close()
         
             
     ClientSocket.close()
