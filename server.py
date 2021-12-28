@@ -229,12 +229,18 @@ def atribuir_vizinhos(id):
 def thread_listening(connect, n_t):
     while True:
         #print("vou ouvir: "+str(n_t))
-        data = connect.recv(2048)
-        print('DATA : ' + str(data))
-        #print('\n')
-        #print("liberado ouvi :"+str(n_t))
-        verificar_mensagens[n_t] = 1
-        lista_mensagens[n_t] = data
+        try:
+            data = connect.recv(2048)
+            print('DATA : ' + str(data))
+            print('\n')
+            #print("liberado ouvi :"+str(n_t))
+            verificar_mensagens[n_t] = 1
+            lista_mensagens[n_t] = data
+        except socket.error:
+            data[0] = 25
+            verificar_mensagens[n_t] = 1
+            lista_mensagens[n_t] = data
+            break
         #print(str(lista_mensagens[n_t]) + " numero: "+ str(n_t))
 
 
