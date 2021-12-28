@@ -231,6 +231,7 @@ def thread_listening(connect, n_t):
         #print("vou ouvir: "+str(n_t))
         data = connect.recv(2048)
         if len(data) == 0:
+            print("Deu ctrl c")
             data = -1
             lista_mensagens[n_t] = data
             verificar_mensagens[n_t] = 1
@@ -343,7 +344,7 @@ def thread_client(connection,n_thread, listening_port):
                 mudou_custo = 1
                 check_topologia = 0
             
-            elif data[0] == -1 :
+            elif data == -1 :
                 print("Desconectou-se por ctrl c")
                 set_status_off(n_thread)
                 g.remove_peer_lig(get_ip_neighbor(n_thread))
