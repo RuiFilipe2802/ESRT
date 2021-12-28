@@ -204,7 +204,7 @@ def set_routing_table(packet):
         #print(numero)
         #print(inteiro)
         array_topologia [counter][2] = float(numero)
-        contador +=16
+        contador += 16
         counter += 1
 
     return routing_table_calculation(array_topologia,ip_source)
@@ -246,25 +246,26 @@ def check_costs():
                     pacote = timeCalc(ip_source)
                     socket2.sendto(pacote,(ip,5000))
         sleep(5)
-        #print('IP NEIGHBOURS -------> ')
-        #print(neighbours)
-        #print('|||||||||||||||| ENTREI |||||||||||||||')
-        #print(cost_stored)
         for ip in ip_neighbours:
             #print('VALORES:')
-            x = 2*float(neighbours[ip])
-            y = float(cost_stored[ip])
+            new = float(neighbours[ip])
+            #print(cost_stored[ip])
+            if not cost_stored:
+                old = 100 
+                cost_stored[ip] = 100            
+            else:
+                old = float(cost_stored[ip])
             #print(x<y)
-            if(x < y):
-                neighbours[ip] = cost_stored[ip]
+            if(2 * new < old):
+                print('MUDA PARA MELHOR')
+                #neighbours[ip] = cost_stored[ip]
                 mudou = 1
-                #print('MUDOU = 1')
+            if(new > 5 * old):
+                print('MUDA PARA PIOR')
+                mudou = 1
+                
         if(mudou == 1):
-            #print('ENVIAR = 4')
-            #lock.acquire(True)
             enviar = '5'
-            #lock.release()
-            #sleep(0.1)
 
 #   SEND DATA
 def sendData(msg,ip):
@@ -282,6 +283,7 @@ def sendData(msg,ip):
     return pacote
 
 def removePeer(peer):
+    global ip_neighbours, ip_source
     topologia = array_topologia
     new_topologia = []
     x = 0
@@ -291,6 +293,16 @@ def removePeer(peer):
         else:
             new_topologia.append((topologia[x][0],topologia[x][1],topologia[x][2]))
         x = x + 1
+    x  = 0
+    if(len(ip_neighbours)==0):
+        while x < len(new_topologia):
+            if(new_topologia[x][0] not in ip_neighbours  and new_topologia[x][1] not in ip_neighbours):
+                if(new_topologia[x][0] == ip_source):
+                    ip_neighbours.append(new_topologia[x][1])
+                if(new_topologia[x][1] == ip_source):
+                    ip_neighbours.append(new_topologia[x][0])
+            x = x + 1
+
     return new_topologia
 
 #   Thread to communicate with server
@@ -364,12 +376,7 @@ def serverComm():
             #print(f'Non Blocking - reading...')
             res = ClientSocket.recv(1024)
             if(res[0] == 10):               # GET NEIGHBOURS
-                #print('GET NEIGHBOURS')
-                #print('GET NEIGHBOURS')
                 ip_neighbours = getNeighbours(res)
-                #print(ip_neighbours)
-                #print('ªªªªªªªªªªªªªªªªªª')
-                #print(ip_neighbours)
                 pacote12 = 1
                 #print(pacote12)
                 for ip in ip_neighbours:
@@ -385,7 +392,7 @@ def serverComm():
                 print(np.matrix(routing_table))
 
             elif(res[0] == 12):             # ask costs
-                #print('ENTREI NO 12')
+                print('ENTREI NO 12')
                 costsGuardados = 0
                 pacote12 = 1
                 for ip in ip_neighbours:
@@ -398,11 +405,8 @@ def serverComm():
                 array = res[1:5]
                 #print('ENTREI AQUI')
                 ip = socket.inet_ntoa(array)
-                print('NEIGHBOURS ANTES: ' + str(ip_neighbours))
-                print('DICIONARIO ANTES: ' + str(neighbours))
                 if ip in ip_neighbours: ip_neighbours.remove(ip)
                 if ip in neighbours.keys():
-                    print('ENTREI NO DICIONARIO' + str(ip))
                     neighbours.pop(ip)
                 print('NEIGHBOURS DEPOIS: ' + str(ip_neighbours))
                 print('DICIONARIO DEPOIS: ' + str(neighbours))

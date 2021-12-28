@@ -1,6 +1,6 @@
 import socket
 from _thread import *
-import _pickle as pickle
+import pickle
 import time
 import random
 import math
@@ -51,12 +51,6 @@ nxt = 1
 # FUNCTIONS
 
 def release_mass(players):
-	"""
-	releases the mass of players
-
-	:param players: dict
-	:return: None
-	"""
 	for player in players:
 		p = players[player]
 		if p["score"] > 8:
@@ -64,13 +58,6 @@ def release_mass(players):
 
 
 def check_collision(players, balls):
-	"""
-	checks if any of the player have collided with any of the balls
-
-	:param players: a dictonary of players
-	:param balls: a list of balls
-	:return: None
-	"""
 	to_delete = []
 	for player in players:
 		p = players[player]
@@ -87,12 +74,6 @@ def check_collision(players, balls):
 
 
 def player_collision(players):
-	"""
-	checks for player collision and handles that collision
-
-	:param players: dict
-	:return: None
-	"""
 	sort_players = sorted(players, key=lambda x: players[x]["score"])
 	for x, player1 in enumerate(sort_players):
 		for player2 in sort_players[x+1:]:
@@ -111,13 +92,6 @@ def player_collision(players):
 
 
 def create_balls(balls, n):
-	"""
-	creates orbs/balls on the screen
-
-	:param balls: a list to add balls/orbs to
-	:param n: the amount of balls to make
-	:return: None
-	"""
 	for i in range(n):
 		while True:
 			stop = True
@@ -135,13 +109,6 @@ def create_balls(balls, n):
 
 
 def get_start_location(players):
-	"""
-	picks a start location for a player based on other player
-	locations. It wiill ensure it does not spawn inside another player
-
-	:param players: dict
-	:return: tuple (x,y)
-	"""
 	while True:
 		stop = True
 		x = random.randrange(0,W)
@@ -158,13 +125,6 @@ def get_start_location(players):
 
 
 def threaded_client(conn, _id):
-	"""
-	runs in a new thread for each player connected to the server
-
-	:param con: ip address of connection
-	:param _id: int
-	:return: None
-	"""
 	global connections, players, balls, game_time, nxt, start
 
 	current_id = _id
@@ -184,13 +144,7 @@ def threaded_client(conn, _id):
 
 	# server will recieve basic commands from client
 	# it will send back all of the other clients info
-	'''
-	commands start with:
-	move
-	jump
-	get
-	id - returns id of client
-	'''
+
 	while True:
 
 		if start:

@@ -231,7 +231,8 @@ def thread_listening(connect, n_t):
         #print("vou ouvir: "+str(n_t))
         data = connect.recv(2048)
         if len(data) == 0:
-            data = -1
+            print('ALGUEM SE DECONECTOU COM CTRL C')
+            data = b'-1'
             lista_mensagens[n_t] = data
             verificar_mensagens[n_t] = 1
             sleep(2)
@@ -262,6 +263,7 @@ def thread_client(connection,n_thread, listening_port):
     broadcast_for__in = 0
     broadcasr_for_custo = 0
     primeiro = 0
+    variavel_qualquer = 0
 
     start_new_thread(thread_listening,(connection, n_thread,))
 
@@ -270,7 +272,7 @@ def thread_client(connection,n_thread, listening_port):
         lock.acquire(True)
         if verificar_mensagens[n_thread] == 1:
             data = lista_mensagens[n_thread]
-            #print("sou a data que vais interpretar:" + str(data) + 'nThread: '+str(n_thread))
+            print("sou a data que vais interpretar:" + str(data) + 'nThread: '+str(n_thread))
             if data[0] == 0:
                 variavel_broadcast_in = 1
                 broadcast_for__in = 1
@@ -315,7 +317,7 @@ def thread_client(connection,n_thread, listening_port):
                 g.remove_peer_lig(get_ip_neighbor(n_thread))
                 variavel_broadcast_out = 1
                 id_broadcast_out = n_thread
-                check_topologia = 0
+                #check_topologia = 0
             
             elif data[0] == 3:  #pacote com custo
                 print("recebi um pacote de encaminhamaneto: "+ str(n_thread)) #interpreto; guardo numa matriz global tpm1;n_viz1;ip4;ip4;custo4
@@ -343,14 +345,14 @@ def thread_client(connection,n_thread, listening_port):
                 mudou_custo = 1
                 check_topologia = 0
             
-            elif data[0] == -1 :
+            elif data == b'-1' :
                 print("Desconectou-se por ctrl c")
                 set_status_off(n_thread)
                 g.remove_peer_lig(get_ip_neighbor(n_thread))
                 variavel_broadcast_out = 1
                 id_broadcast_out = n_thread
-                check_topologia = 0
-                break
+                #check_topologia = 0
+                variavel_qualquer = 1
 
             print("n topologia:" + str(check_topologia))
             verificar_mensagens[n_thread] = 0
@@ -395,7 +397,9 @@ def thread_client(connection,n_thread, listening_port):
                 connection.send(b'-1')
                 fui_o_primeiro = 1
             else:
+                print(g.out_of_neighbor(get_ip_neighbor(n_thread)))
                 if g.out_of_neighbor(get_ip_neighbor(n_thread)):
+                    print('ENTREI AQUI VOU ENVIAR VIZINHOS')
                     viz_ids = []
                     viz_ids = atribuir_vizinhos(n_thread)
                     if qnt_peers_on() == 2:
@@ -443,6 +447,8 @@ def thread_client(connection,n_thread, listening_port):
                 count_for_cust = 0
                 mudou_custo = 0
 
+        if(variavel_qualquer == 1):
+            break
         lock.release()
         sleep(0.2)
     
