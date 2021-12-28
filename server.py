@@ -229,19 +229,18 @@ def atribuir_vizinhos(id):
 def thread_listening(connect, n_t):
     while True:
         #print("vou ouvir: "+str(n_t))
-        try:
-            data = connect.recv(2048)
-            print('DATA : ' + str(data))
-            print('\n')
-            #print("liberado ouvi :"+str(n_t))
-            verificar_mensagens[n_t] = 1
+        data = connect.recv(2048)
+        if len(data) == 0:
+            data = -1
             lista_mensagens[n_t] = data
-        except socket.error:
-            data[0] = 25
             verificar_mensagens[n_t] = 1
-            lista_mensagens[n_t] = data
+            sleep(2)
             break
-        #print(str(lista_mensagens[n_t]) + " numero: "+ str(n_t))
+        print('DATA : ' + str(data))
+        print('\n')
+        #print("liberado ouvi :"+str(n_t))
+        verificar_mensagens[n_t] = 1
+        lista_mensagens[n_t] = data
 
 
 def thread_client(connection,n_thread, listening_port):
@@ -343,6 +342,15 @@ def thread_client(connection,n_thread, listening_port):
                 #print('MANDA CUSTO = 1')
                 mudou_custo = 1
                 check_topologia = 0
+            
+            elif data[0] == -1 :
+                print("Desconectou-se por ctrl c")
+                set_status_off(n_thread)
+                g.remove_peer_lig(get_ip_neighbor(n_thread))
+                variavel_broadcast_out = 1
+                id_broadcast_out = n_thread
+                check_topologia = 0
+                break
 
             print("n topologia:" + str(check_topologia))
             verificar_mensagens[n_thread] = 0
@@ -437,7 +445,9 @@ def thread_client(connection,n_thread, listening_port):
 
         lock.release()
         sleep(0.2)
-         
+    
+    lock.release()
+    print("Fui com os porcos")
     connection.close()
 
 
