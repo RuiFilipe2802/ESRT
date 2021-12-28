@@ -217,8 +217,8 @@ def atribuir_vizinhos(id):
         while a != 2:
             a += 1
             b = random.randint(0,threadCount - 1 )
-            print('LIMITE DE NEIGHBOURS QUE PODE ESGOTAR '+ str(g.lim_of_neighbours(get_ip_neighbor(b))))
-            if b != id and b not in numero_ids and verificar_status(b) and g.lim_of_neighbours(get_ip_neighbor(b)) < 3:
+            #print('LIMITE DE NEIGHBOURS QUE PODE ESGOTAR '+ str(g.lim_of_neighbours(get_ip_neighbor(b))))
+            if b != id and b not in numero_ids and verificar_status(b):
                 print('LIMITE DE NEIGHBOURS '+ str(g.lim_of_neighbours(get_ip_neighbor(b))))
                 numero_ids.append(b)
             else:

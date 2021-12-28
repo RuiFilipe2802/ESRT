@@ -36,6 +36,8 @@ disconnect_var = 0
 costsGuardados = -1
 pacote12 = 0
 
+arrayCustos = []
+
 #   Set time according to NTP Server
 def setTime():
     c = ntplib.NTPClient() 
@@ -234,7 +236,7 @@ def check_costs():
     while len(ip_neighbours) == 0:
         pass
     while disconnect_var == 0:
-        sleep(25)
+        sleep(10)
         #print('ENTREI')
         mudou = 0
         #print(neighbours)
@@ -394,7 +396,7 @@ def serverComm():
             elif(res[0] == 13):             # remover ip dos neighbours se tiver
                 #print('13')
                 array = res[1:5]
-                print('ENTREI AQUI')
+                #print('ENTREI AQUI')
                 ip = socket.inet_ntoa(array)
                 print('NEIGHBOURS ANTES: ' + str(ip_neighbours))
                 print('DICIONARIO ANTES: ' + str(neighbours))
@@ -448,6 +450,13 @@ def peerListener(ip_src):
             buf2 = struct.unpack('>f', data[9:])
             aux = str(buf2).strip('(').strip(')').strip(',')
             numero = inteiro + float(str(aux))
+            f = open("logs2.txt", "a")
+            f.write(str(numero) + '\n')
+            f.close()
+            arrayCustos.append(numero)
+            if len(arrayCustos) == 10:
+                mean = np.mean(arrayCustos)
+                print('Media :' + str(mean))
             timestamp = datetime.fromtimestamp(numero)
             if(ip_rec in ip_neighbours):
                 neighbours[ip_rec] = numero

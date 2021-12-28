@@ -13,9 +13,8 @@ import numpy as np
 
 arrayCustos = []
 PORT_UDP = 5001         # UDP PORT
-
 #   IP ADDRESS
-ip_source = "10.0.1.2"
+ip_source = "10.0.3.3"
 def setTime():
     c = ntplib.NTPClient() 
     response = c.request ('pool.ntp.org') 
@@ -108,35 +107,21 @@ def peerListener(ip_src):
             buf2 = struct.unpack('>f', data[9:])
             aux = str(buf2).strip('(').strip(')').strip(',')
             numero = inteiro + float(str(aux))
-            contador = 0
-            f = open("logs.txt", "a")
-            f.write(str(numero) + '\n')
-            f.close()
-            arrayCustos.append(numero)
             timestamp = datetime.fromtimestamp(numero)
-            #print(timestamp)
+            #print(numero)
 
         elif(data[0] == 21):            # DATA
             #UDP para enviar o data com ip = ip_enviar se ip = 1 nao enviar
             print('normal data')
 
 
-def fun_input():
-    while 1:
-        if(len(arrayCustos) == 10):
-            media = np.mean(arrayCustos)
-            print(media)
-        sleep(15)
-        socket2 = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        pacote = timeCalc(ip_source)
-        socket2.sendto(pacote,('10.0.3.3',5001))
+
 
 
 if __name__ == "__main__":
     
     #   SET MACHINE TIME
     setTime()
-    _thread.start_new_thread(fun_input,())
     _thread.start_new_thread(peerListener,(ip_source,))
     while 1:
         pass
