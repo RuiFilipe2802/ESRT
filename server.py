@@ -232,7 +232,7 @@ def thread_listening(connect, n_t):
         data = connect.recv(2048)
         if len(data) == 0:
             print("Deu ctrl c")
-            data = -1
+            data = b'-1'
             lista_mensagens[n_t] = data
             verificar_mensagens[n_t] = 1
             sleep(2)
