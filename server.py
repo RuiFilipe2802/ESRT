@@ -235,7 +235,7 @@ def thread_listening(connect, n_t):
             data = b'-1'
             lista_mensagens[n_t] = data
             verificar_mensagens[n_t] = 1
-            sleep(2)
+            sleep(0.5)
             break
         print('DATA : ' + str(data))
         print('\n')
@@ -322,17 +322,13 @@ def thread_client(connection,n_thread, listening_port):
             elif data[0] == 3:  #pacote com custo
                 print("recebi um pacote de encaminhamaneto: "+ str(n_thread)) #interpreto; guardo numa matriz global tpm1;n_viz1;ip4;ip4;custo4
                 n_vizinhos = data[1]
+                aux = 2
                 for a in range(n_vizinhos):
-                    if a == 0:
-                        ip_peer,ip_viz,custo = interpretar_trama_custo(data[2:18])
-                        #print(ip_peer+", "+ ip_viz+"-> "+str(custo))
-                        g.add_edge(ip_peer,ip_viz,custo)
+                    ip_peer,ip_viz,custo = interpretar_trama_custo(data[aux:aux+16])
+                    aux += 16
+                    g.add_edge(ip_peer,ip_viz,custo)
+                    if a== 0:
                         fui_o_primeiro = 0
-                    if a == 1:
-                        #print(data[18:30])
-                        ip_peer,ip_viz,custo = interpretar_trama_custo(data[18:34])
-                        #print(ip_peer+", "+ ip_viz+"-> "+str(custo))
-                        g.add_edge(ip_peer,ip_viz,custo)
                 print("grafo ->")
                 g.print_graph()
 
@@ -391,11 +387,14 @@ def thread_client(connection,n_thread, listening_port):
         
         if variavel_broadcast_out == 1 and n_thread != id_broadcast_out and verificar_status(n_thread):
             print("Enviar 13 porque alguem se desconectou esta é a trhea "+str(n_thread)+" desconectou-se a thread"+(str(id_broadcast_out)) + "STATUS NTHREAD :" + str(verificar_status(n_thread)))
+            print(qnt_peers_on())
             connection.send(connection_ended(get_ip_neighbor(id_broadcast_out)))
             count_for_broadcast_out = count_for_broadcast_out + 1
             if qnt_peers_on() == 1:
+                print('ENtrei aqui asdasdasdasd')
                 connection.send(b'-1')
                 fui_o_primeiro = 1
+                primeiro = 1
             else:
                 print(g.out_of_neighbor(get_ip_neighbor(n_thread)))
                 if g.out_of_neighbor(get_ip_neighbor(n_thread)):
@@ -411,7 +410,13 @@ def thread_client(connection,n_thread, listening_port):
                         ip1 = get_ip_neighbor(viz_ids[0])
                         ip2 = get_ip_neighbor(viz_ids[1])
                         packet = send_neighbors(2, ip1,ip2)
+                    
+                    print(packet)
+                    sleep(0.1)
                     connection.send(packet)
+                    mudou_custo = 1
+                    check_topologia = 0
+                    sleep(0.1)
             broadcast_for_out = 0
 
             if count_for_broadcast_out == qnt_peers_on():

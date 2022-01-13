@@ -22,7 +22,7 @@ MASS_LOSS_TIME = 7
 W, H = 1000, 500
 
 HOST_NAME = socket.gethostname()
-SERVER_IP = '127.0.0.1'
+SERVER_IP = '10.0.5.3'
 
 # try to connect to server
 try:
@@ -228,7 +228,7 @@ while True:
 	print("[CONNECTION] Connected to:", addr)
 
 	# start game when a client on the server computer connects
-	if addr[0] == SERVER_IP and not(start):
+	if connections >= 1 and not(start):
 		start = True
 		start_time = time.time()
 		print("[STARTED] Game Started")

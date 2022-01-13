@@ -5,7 +5,7 @@ class Network:
     def __init__(self):
         self.client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         #self.client.settimeout(10.0)
-        self.host = "127.0.0.1"
+        self.host = "10.0.5.3"
         self.port = 5555
         self.addr = (self.host, self.port)
 
@@ -21,10 +21,10 @@ class Network:
     def send(self, data, pick=False):
         try:
             if pick:
-                self.client.send(pickle.dumps(data))
+                self.client.sendall(pickle.dumps(data))
             else:
-                self.client.send(str.encode(data))
-            reply = self.client.recv(2048*4)
+                self.client.sendall(str.encode(data))
+                reply = self.client.recv(2048*4)
             try:
                 reply = pickle.loads(reply)
             except Exception as e:

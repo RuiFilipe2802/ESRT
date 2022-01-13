@@ -4,6 +4,7 @@ with contextlib.redirect_stdout(None):
 from client import Network
 import random
 import os
+import time
 pygame.font.init()
 
 # Constants
@@ -123,9 +124,14 @@ def main(name):
                 player["y"] = player["y"] + vel
 
         data = "move " + str(player["x"]) + " " + str(player["y"])
-
+        #print('--------------------')
+        #print(data)
         # send data to server and recieve back all players information
         balls, players, game_time = server.send(data)
+        #time.sleep(1)
+        #print(balls)
+        #print(players)
+        #print(game_time)
 
         for event in pygame.event.get():
             # if user hits red x button close window

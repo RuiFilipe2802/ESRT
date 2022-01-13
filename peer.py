@@ -236,7 +236,7 @@ def check_costs():
     while len(ip_neighbours) == 0:
         pass
     while disconnect_var == 0:
-        sleep(10)
+        sleep(15)
         #print('ENTREI')
         mudou = 0
         #print(neighbours)
@@ -245,7 +245,7 @@ def check_costs():
                     socket2 = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
                     pacote = timeCalc(ip_source)
                     socket2.sendto(pacote,(ip,5000))
-        sleep(5)
+        sleep(0.2)
         for ip in ip_neighbours:
             #print('VALORES:')
             new = float(neighbours[ip])
@@ -283,7 +283,7 @@ def sendData(msg,ip):
     return pacote
 
 def removePeer(peer):
-    global ip_neighbours, ip_source
+    global ip_neighbours, ip_source, array_topologia
     topologia = array_topologia
     new_topologia = []
     x = 0
@@ -294,8 +294,12 @@ def removePeer(peer):
             new_topologia.append((topologia[x][0],topologia[x][1],topologia[x][2]))
         x = x + 1
     x  = 0
+    print('\n\nTOPOLOGIA')
+    print(new_topologia)
     if(len(ip_neighbours)==0):
         while x < len(new_topologia):
+            print(str(new_topologia[x][0]) + str(new_topologia[x][1]))
+
             if(new_topologia[x][0] not in ip_neighbours  and new_topologia[x][1] not in ip_neighbours):
                 if(new_topologia[x][0] == ip_source):
                     ip_neighbours.append(new_topologia[x][1])
@@ -303,6 +307,7 @@ def removePeer(peer):
                     ip_neighbours.append(new_topologia[x][0])
             x = x + 1
 
+    array_topologia = new_topologia
     return new_topologia
 
 #   Thread to communicate with server
@@ -375,7 +380,9 @@ def serverComm():
         for s in readable:
             #print(f'Non Blocking - reading...')
             res = ClientSocket.recv(1024)
+            print(res)
             if(res[0] == 10):               # GET NEIGHBOURS
+                print('RECEBI VIZINHOS')
                 ip_neighbours = getNeighbours(res)
                 pacote12 = 1
                 #print(pacote12)
