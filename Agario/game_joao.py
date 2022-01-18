@@ -108,7 +108,8 @@ enviar_game = 0
 
 def main(name):
     global players,decision, data1, start, enviar_game, recebida
-    
+    #so para testes vou definir aqui
+    decision = 0
     # start by connecting to the network
     if decision == 0:
         server = Network()
