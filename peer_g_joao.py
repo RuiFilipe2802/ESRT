@@ -11,7 +11,7 @@ import os
 import struct
 from testes_do_tiago.dijkstra import *
 import select
-from Agario.game import *
+from Agario.game_joao import *
 import numpy as np
 
 #   Conf
@@ -499,7 +499,7 @@ def peerListener(ip_src):
             else:
                 #recebi data do jogo
                 recebido = 1
-                set_p_b_gt(data[6:])
+                set_p_b_gt(data[10:])
             #UDP para enviar o data com ip = ip_enviar se ip = 1 nao enviar
             print('normal data')
 
