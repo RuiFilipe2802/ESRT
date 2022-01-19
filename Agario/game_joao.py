@@ -99,6 +99,18 @@ def set_start(st):
     global start
     start = 1
 
+def get_start():
+    global start
+    return start
+
+def get_enviar():
+    global enviar_game
+    return enviar_game
+
+def set_recebida(r):
+    global recebida 
+    recebida = r
+
 recebida = 0
 enviar_game = 0
 

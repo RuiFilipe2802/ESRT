@@ -525,14 +525,15 @@ def gaming():
             while recebido == 0:
                 pass
             start = 1
-        while start == 1:
-            while enviar_game == 0:
+            set_start(1)
+        while get_start() == 1:
+            while get_enviar() == 0:
                 pass
             sendData(data1, ip_game_server,ip_source,3)
             while recebido == 0:
                 pass
             recebido = 0
-            recebida = 1
+            set_recebida(1)
         print("Sai do jogo")
         sendData("",ip_game_server,ip_source,2)
             
