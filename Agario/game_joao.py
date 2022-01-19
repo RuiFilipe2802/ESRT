@@ -205,13 +205,6 @@ def main(name):
 
 
 # get users name
-while True:
-    name = input("Please enter your name: ")
-    if(0 < len(name) < 20):
-        break
-    else:
-        print(
-            "Error, this name is not allowed (must be between 1 and 19 characters [inclusive])")
 
 WIN = None
 
