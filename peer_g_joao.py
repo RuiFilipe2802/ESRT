@@ -509,7 +509,7 @@ def thread_game(name):
 recebido = 0
             
 def gaming():
-    global enviar,mensagem, ip_game_server,recebido,recebida,enviar_game
+    global enviar,mensagem, ip_game_server,recebido,recebida,enviar_game,start
     while 1:
         enviar = input()
         print('Input: '+ enviar)

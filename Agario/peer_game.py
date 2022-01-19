@@ -612,10 +612,10 @@ client_list = []
 client_dict = {}
 mensagem = []
 
-def thread_client(_id,ip):
+def thread_client(id,ip):
     global client_list, data_game
     global connections, players, balls, game_time, nxt, start
-    current_id = _id
+    current_id = id
 
     while(client_list[current_id] == 0):
         pass
@@ -689,8 +689,8 @@ def int_ip(data):
     ip = str(data[0])+"."+str(data[1])+"."+str(data[2])+"."+str(data[3])
     return ip
 
-def gaming(_id):
-    global connections, players, balls, game_time, nxt, start, start_time
+def gaming():
+    global connections, players, balls, game_time, nxt, start, start_time, _id
     create_balls(balls, random.randrange(200,250))
 
     print("[GAME] Setting up level")
