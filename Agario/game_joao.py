@@ -214,12 +214,12 @@ while True:
             "Error, this name is not allowed (must be between 1 and 19 characters [inclusive])")
 
 
-# make window start in top left hand corner
-os.environ['SDL_VIDEO_WINDOW_POS'] = "%d,%d" % (0, 30)
+def start_gaming(name):# make window start in top left hand corner
+    os.environ['SDL_VIDEO_WINDOW_POS'] = "%d,%d" % (0, 30)
 
-# setup pygame window
-WIN = pygame.display.set_mode((W, H))
-pygame.display.set_caption("Game")
+    # setup pygame window
+    WIN = pygame.display.set_mode((W, H))
+    pygame.display.set_caption("Game")
 
-# start game
-main(name)
+    # start game
+    main(name)
