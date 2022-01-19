@@ -504,7 +504,7 @@ def peerListener(ip_src):
             print('normal data')
 
 def thread_game(name):
-    main(name)
+    start_gaming(name)
 
 recebido = 0
             

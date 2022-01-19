@@ -213,6 +213,7 @@ while True:
         print(
             "Error, this name is not allowed (must be between 1 and 19 characters [inclusive])")
 
+WIN = None
 
 def start_gaming(name):# make window start in top left hand corner
     os.environ['SDL_VIDEO_WINDOW_POS'] = "%d,%d" % (0, 30)
