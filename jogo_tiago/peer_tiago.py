@@ -227,11 +227,12 @@ def next_data_hop(packet):
     ip_rede_destino = ""
     if(ip_destino == ip_source):
         print('Chegou ao destino')
-        print(packet[5:len(packet)])
         global recebi_pacote_jogo
         recebi_pacote_jogo = packet[5:len(packet)]
-        print("enviar para o server/game")
-        cliente.send(recebi_pacote_jogo[1:])
+        print("------Enviar pacote para o jogo --------")
+        print("Ip Origem:"+str(socket.inet_ntoa(recebi_pacote_jogo[:4])))
+        print("----------------------------------")
+        cliente.send(recebi_pacote_jogo)
         recebi_pacote_jogo  = 0
     else:
         global routing_table
@@ -284,7 +285,7 @@ def check_costs():
             enviar = '5'
 
 #   SEND DATA
-def sendData(data,ip):
+def sendData(data,ip, ipO):
     #print('AQUI')
     #print(msg)
     #print(ip)
@@ -294,7 +295,14 @@ def sendData(data,ip):
     #for a in range(len(array)):
     #    pacote.append(int(array[a]))
     pacote[1:5] = ip
-    pacote[5:] = data
+    pacote[5:9] = ipO
+    ip = socket.inet_ntoa(pacote[1:5])
+    ipO = socket.inet_ntoa(pacote[5:9])
+    pacote[9:] = data
+    print("--------Pacote a enviar pela rede Overlay---------")
+    print("IP Destino:"+str(ip))
+    print("IP Origem:"+str(ipO))
+    print("--------------------------------------------------")
     #print('PACOTE:')
     return pacote
 
@@ -527,6 +535,7 @@ def fun_input():
             
 def app_communication():
     while True:
+        con = 0 
         client, Address = server.accept()
         print(f"Connection Estabished: "+str(Address))
         global cliente
@@ -535,11 +544,15 @@ def app_communication():
             try:
                 pacote_jogo = client.recv(4096)
             finally:
-                #cliente.send(str("tou aqui crl").encode("utf-8"))
-                #print(pacote_jogo)
+                if(con == 0):
+                    #cliente.send(str("tou aqui crl").encode("utf-8"))
+                    con = 1
                 if len(pacote_jogo) > 4:
-                    print(Address[0])
-                    pacote_enviar = sendData(pacote_jogo[4:],pacote_jogo[:4])
+                    print("--------Pacote Recebido pela TCP jogo---------")
+                    print("Ip Destino:"+str(socket.inet_ntoa(pacote_jogo[:4])))
+                    print("Ip Origem:"+str(socket.inet_ntoa(pacote_jogo[4:8])))
+                    print("----------------------------------------------")
+                    pacote_enviar = sendData(pacote_jogo[8:],pacote_jogo[:4],pacote_jogo[4:8])
                     ip_enviar = next_data_hop(pacote_enviar)
                     if(ip_enviar != 1):
                         #print('ENTREI NO IF')
@@ -561,3 +574,4 @@ if __name__ == "__main__":
 
     while 1:
         pass
+    

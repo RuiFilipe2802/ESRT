@@ -1,21 +1,28 @@
 import contextlib
+from locale import currency
 with contextlib.redirect_stdout(None):
     import pygame
-from client import Network
 import random
+from Agario.client import Network
 import os
 import time
 pygame.font.init()
 import sys
+import pickle
 
 # Constants
 PLAYER_RADIUS = 10
 START_VEL = 9
 BALL_RADIUS = 5
 
-decision = int(sys.argv[1])
+decision = 1
+start = 0
 
 W, H = 1000, 500
+
+current_id = 0
+
+WIN = None
 
 NAME_FONT = pygame.font.SysFont("comicsans", 20)
 TIME_FONT = pygame.font.SysFont("comicsans", 30)
@@ -50,6 +57,7 @@ def convert_time(t):
 
 
 def redraw_window(players, balls, game_time, score):
+    global WIN
     WIN.fill((255, 255, 255))  # fill screen white, to clear old frames
 
     # draw all the orbs/balls
@@ -93,7 +101,7 @@ def set_p_b_gt(r_data):
     balls, players, game_time = r_data
 
 def set_data():
-    return data1
+    return pickle.dumps(data1)
 
 def set_start(st):
     global start
@@ -111,15 +119,16 @@ def set_recebida(r):
     global recebida 
     recebida = r
 
+def set_current_id(id):
+    global current_id
+    current_id = id
+
 recebida = 0
 enviar_game = 0
-
-
-
     
-
 def main(name):
-    global players,decision, data1, start, enviar_game, recebida
+    print('VOU COMEÇAR O JOGO FDPS')
+    global players,decision, data1, start, enviar_game, recebida, current_id
     #so para testes vou definir aqui
     decision = 1
     # start by connecting to the network
@@ -206,11 +215,9 @@ def main(name):
 
 # get users name
 
-WIN = None
-
 def start_gaming(name):# make window start in top left hand corner
     os.environ['SDL_VIDEO_WINDOW_POS'] = "%d,%d" % (0, 30)
-
+    global WIN
     # setup pygame window
     WIN = pygame.display.set_mode((W, H))
     pygame.display.set_caption("Game")

@@ -1,7 +1,9 @@
 #https://www.bogotobogo.com/python/python_Dijkstras_Shortest_Path_Algorithm.php
+from select import select
 import sys
 from functools import total_ordering
 import numpy as np
+
 
 
 @total_ordering
@@ -20,11 +22,7 @@ class Vertex:
         self.adjacent[neighbor] = weight
 
     def get_connections(self):
-        #print(self)
-        return self.adjacent.keys()
-
-    def delete_vertex(self, n):
-        self.adjacent.pop(n)  
+        return self.adjacent.keys()  
 
     def get_id(self):
         return self.id
@@ -37,12 +35,6 @@ class Vertex:
 
     def get_distance(self):
         return self.distance
-    
-    def is_in(self, n):
-        if n in self.adjacent.keys():
-            return True
-        else:
-            return False
 
     def set_previous(self, prev):
         self.previous = prev
@@ -86,29 +78,6 @@ class Graph:
         else:
             return None
 
-    def out_of_neighbor(self,ip):
-        if len(self.vert_dict[ip].get_connections()) == 0:
-            return True
-        else:
-            return False
-        
-    def lim_of_neighbours(self,ip):
-        return len(self.vert_dict[ip].get_connections())
-        
-
-    def remove_peer_lig(self,n):
-        for value in self.vert_dict.values():
-            for w in value.get_connections():
-                if w.is_in(self.get_vertex(n)):
-                    w.delete_vertex(self.get_vertex(n))
-        self.vert_dict.pop(n)
-        
-                    
-    def delete_graph(self):
-        self.vert_dict.clear()
-        self.num_vertices = 0
-        
-
     def add_edge(self, frm, to, cost = 0):
         if frm not in self.vert_dict:
             self.add_vertex(frm)
@@ -127,14 +96,6 @@ class Graph:
     def get_previous(self, current):
         return self.previous
     
-    def print_graph(self):
-        for v in self:
-            for w in v.get_connections():
-                vid = v.get_id()
-                wid = w.get_id()
-                print ('( %s , %s, %f)'  % ( vid, wid, v.get_weight(w))) 
-                
-
     def get_graph_em_forma_de_array(self):
         array_topologia = []
         x = 0
@@ -155,8 +116,6 @@ class Graph:
             else:
                 new_topologia.append((topologia[x][0],topologia[x][1],topologia[x][2]))
             x = x + 1
-        print("new")
-        print(new_topologia)
         return new_topologia
 
 
@@ -286,7 +245,44 @@ def routing_table_calculation(array_topologia, node):
 
     return routing_table
 
+def faz_novo_graph_sem_o_peer_desconectado(array_sem_peer):
+    g1 = Graph()
+    l = 0
+    for x in array_sem_peer:
+        g1.add_edge(array_sem_peer[l][0],array_sem_peer[l][1],array_sem_peer[l][2])
+        l +=1
+    
+    return g1                
 
-                        
 
+if __name__ == "__main__":
+    g = Graph()
+    g.add_vertex('10.0.0.1')
+    g.add_vertex('10.0.0.2')
+    g.add_vertex('10.0.0.3')
+    g.add_vertex('10.0.0.4')
+    g.add_vertex('10.0.0.5')
+    g.add_vertex('10.0.0.6')
 
+    g.add_edge('10.0.0.1', '10.0.0.2', 2)  
+    g.add_edge('10.0.0.1', '10.0.0.3', 4)
+    g.add_edge('10.0.0.1', '10.0.0.6', 10)
+    g.add_edge('10.0.0.2', '10.0.0.3', 3)
+    g.add_edge('10.0.0.2', '10.0.0.4', 4)
+    g.add_edge('10.0.0.3', '10.0.0.5', 1)
+    g.add_edge('10.0.0.4', '10.0.0.5', 5)
+    g.add_edge('10.0.0.4', '10.0.0.6', 1)
+
+    #passa o graph para array
+    array_topologia = g.get_graph_em_forma_de_array()
+    print(np.matrix(array_topologia))
+
+    #remove o peer do graph g
+    peer = '10.0.0.1'
+    array_topologia_sem_peer = g.remove_peer(peer)
+    #print(np.matrix(array_topologia_sem_peer))
+    print('------------------------')
+    #cria um novo graph sem o peer removdido 
+    novo_graph = faz_novo_graph_sem_o_peer_desconectado(array_topologia_sem_peer)
+    nova_topologia = novo_graph.get_graph_em_forma_de_array()
+    print(np.matrix(nova_topologia))

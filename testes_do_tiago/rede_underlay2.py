@@ -97,6 +97,7 @@ def peerListener(ip_src):
             ipDestino = data[1:5]
             ip_dest = socket.inet_ntoa(ipDestino)
             sendCusto = sendConnectionCost(cost)
+            print('MANDEI PARA O :' + str(ip_dest) + ' com a porta :' + str(PORT_UDP))
             socketEnvio.sendto(sendCusto,(ip_dest,5001))
 
         elif(data[0] == 30):           # RECEIVE COST AND STORE 
@@ -113,9 +114,6 @@ def peerListener(ip_src):
         elif(data[0] == 21):            # DATA
             #UDP para enviar o data com ip = ip_enviar se ip = 1 nao enviar
             print('normal data')
-
-
-
 
 
 if __name__ == "__main__":

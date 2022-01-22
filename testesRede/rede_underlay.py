@@ -12,7 +12,7 @@ import statistics
 import numpy as np
 
 arrayCustos = []
-PORT_UDP = 5001         # UDP PORT
+PORT_UDP = 5002         # UDP PORT
 
 #   IP ADDRESS
 ip_source = "10.0.1.2"
@@ -109,7 +109,7 @@ def peerListener(ip_src):
             aux = str(buf2).strip('(').strip(')').strip(',')
             numero = inteiro + float(str(aux))
             contador = 0
-            f = open("logsUnderlayCut.txt", "a")
+            f = open("logs.txt", "a")
             f.write(str(numero) + '\n')
             f.close()
             arrayCustos.append(numero)
@@ -126,10 +126,10 @@ def fun_input():
         if(len(arrayCustos) == 100):
             media = np.mean(arrayCustos)
             print(media)
-        sleep(1)
+        sleep(2)
         socket2 = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         pacote = timeCalc(ip_source)
-        socket2.sendto(pacote,('10.0.3.3',5001))
+        socket2.sendto(pacote,('10.0.3.3',5002))
 
 
 if __name__ == "__main__":

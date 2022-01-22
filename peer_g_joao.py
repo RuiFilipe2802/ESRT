@@ -9,7 +9,7 @@ import threading
 import sys
 import os
 import struct
-from testes_do_tiago.dijkstra import *
+from Agario.dijkstra import *
 import select
 from Agario.game_joao import *
 import numpy as np
@@ -39,6 +39,8 @@ costsGuardados = -1
 pacote12 = 0
 
 arrayCustos = []
+
+data_game = ""
 
 #   Set time according to NTP Server
 def setTime():
@@ -217,8 +219,9 @@ def next_data_hop(packet):
     #print('IP DESTINO :' + str(ip_destino))
     ip_rede_destino = ""
     if(ip_destino == ip_source):
-        print('Chegou ao destino')
-        print(packet[5:len(packet)])
+        #print('Chegou ao destino')
+        x = 1+1
+        #print(packet[5:len(packet)])
     else:
         global routing_table
         x = 0
@@ -281,13 +284,14 @@ def sendData(msg,ip_to,ip_from,tpm):
         pacote1.append(int(array[a]))
     array1 = ip_from.split(".")
     for b in range(len(array1)):
-        pacote1.append(int(array[b]))
+        pacote1.append(int(array1[b]))
     pacote1.append(tpm)
-    pacote1[6:] = (bytearray(msg.encode()))
+    for c in range(len(msg)):
+        pacote1.append(msg[c])
     #print('PACOTE:')
-    #print(pacote)
+    #print(pacote1)
     socketEnvio = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    socketEnvio.sendto(pacote1,(ip_to,5000))
+    socketEnvio.sendto(pacote1,(next_data_hop(pacote1),5000))
 
 def removePeer(peer):
     global ip_neighbours, ip_source, array_topologia
@@ -498,10 +502,12 @@ def peerListener(ip_src):
                 socketEnvio.sendto(data,(ip_enviar,5000))
             else:
                 #recebi data do jogo
+                global data_game
+                data_game = data
                 recebido = 1
-                set_p_b_gt(data[10:])
+                #set_p_b_gt(data[10:])
             #UDP para enviar o data com ip = ip_enviar se ip = 1 nao enviar
-            print('normal data')
+            #print('normal data')
 
 def thread_game(name):
     start_gaming(name)
@@ -509,34 +515,41 @@ def thread_game(name):
 recebido = 0
             
 def gaming():
-    global enviar,mensagem, ip_game_server,recebido,recebida,enviar_game,start
     while 1:
-        enviar = input()
-        print('Input: '+ enviar)
+        global ip_game_server,recebido,recebida,enviar_game,start,data_game
         if(enviar == '6'):
-            _thread.start_new_thread(thread_game,(name),)
-            while True:
-                name = input("Please enter your name: ")
-                if(0 < len(name) < 20):
-                    break
-                else:
-                    print("Error, this name is not allowed (must be between 1 and 19 characters [inclusive])")
+            print('COMEÇAR O JOGO')
+            name = 'rui'
+            print('VOU ENVIAR DATA')
             sendData(str.encode(name), ip_game_server,ip_source,1)
             while recebido == 0:
                 pass
             start = 1
+            print(data_game[10])
+            set_current_id(int(data_game[10:].decode()))
             set_start(1)
+            _thread.start_new_thread(thread_game,(name,))
+            sendData("get".encode(),ip_game_server,ip_source,3)
+            while recebido == 0:
+                pass
+            set_p_b_gt(pickle.loads(data_game[10:]))
+            time.sleep(1)
         while get_start() == 1:
             while get_enviar() == 0:
                 pass
             sendData(data1, ip_game_server,ip_source,3)
             while recebido == 0:
                 pass
+            set_p_b_gt(pickle.loads(data_game[10:]))
             recebido = 0
             set_recebida(1)
-        print("Sai do jogo")
-        sendData("",ip_game_server,ip_source,2)
+        #print("Sai do jogo")
+        #sendData("",ip_game_server,ip_source,2)
             
+def fun_input():
+    while 1:
+        global enviar,mensagem
+        enviar = input()
 
 if __name__ == "__main__":
     
@@ -545,6 +558,7 @@ if __name__ == "__main__":
 
     #   START THREAD SERVER-PEER TCP
     _thread.start_new_thread(serverComm,())    
+    _thread.start_new_thread(fun_input,())
     _thread.start_new_thread(gaming,())
 
     while 1:

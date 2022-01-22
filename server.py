@@ -197,7 +197,6 @@ def trama_grafo(array):
                     trama.append(int(ip[a]))
     return trama
     
-    
 def atribuir_vizinhos(id):
     #print("vou atribuir vizinhos id: "+str(id))
     numero_ids = []
@@ -218,7 +217,7 @@ def atribuir_vizinhos(id):
             a += 1
             b = random.randint(0,threadCount - 1 )
             #print('LIMITE DE NEIGHBOURS QUE PODE ESGOTAR '+ str(g.lim_of_neighbours(get_ip_neighbor(b))))
-            if b != id and b not in numero_ids and verificar_status(b):
+            if b != id and b not in numero_ids and verificar_status(b) and g.lim_of_neighbours(get_ip_neighbor(b)) < 4:
                 print('LIMITE DE NEIGHBOURS '+ str(g.lim_of_neighbours(get_ip_neighbor(b))))
                 numero_ids.append(b)
             else:
@@ -391,7 +390,7 @@ def thread_client(connection,n_thread, listening_port):
             connection.send(connection_ended(get_ip_neighbor(id_broadcast_out)))
             count_for_broadcast_out = count_for_broadcast_out + 1
             if qnt_peers_on() == 1:
-                print('ENtrei aqui asdasdasdasd')
+                #print('ENtrei aqui asdasdasdasd')
                 connection.send(b'-1')
                 fui_o_primeiro = 1
                 primeiro = 1
@@ -458,7 +457,6 @@ def thread_client(connection,n_thread, listening_port):
         sleep(0.2)
     
     lock.release()
-    print("Fui com os porcos")
     connection.close()
 
 
@@ -466,7 +464,6 @@ if __name__ == "__main__":
     portas_peer = 5000
     
     ServerSocket = socket.socket()
-    
     try:
         ServerSocket.bind((host,port))
         

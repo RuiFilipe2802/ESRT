@@ -1,16 +1,27 @@
 import socket
 import pickle
+import sys
+
+IP_SERVER = "10.0.5.2"
+ipO = sys.argv[1]
 
 
-def cria_pacote(ip,data):
+def cria_pacote(ip, ipO, data, tipo):
     pacote = bytearray(0)
     array = ip.split(".")
     for a in range(len(array)):
         pacote.append(int(array[a]))
-    ip = socket.inet_ntoa(pacote[0:4])
-    print(ip)
-    pacote[4:] = (bytearray(data.encode()))
+    array1 = ipO.split(".")
+    for a in range(len(array1)):
+        pacote.append(int(array1[a]))
+    if tipo == 2:
+        for i in range(len(data)):
+            pacote.append(data(i)) 
+    else: 
+        pacote[8:] = data
     return pacote
+# FUNCTIONS
+
 
 class Network:
     def __init__(self):
@@ -22,10 +33,12 @@ class Network:
 
     def connect(self, name):
         self.client.connect(self.addr)
-        pacote = cria_pacote("10.0.0.3",name)
+        print(ipO)
+        pacote = cria_pacote(IP_SERVER,ipO,str(name).encode("utf-8"),1)
         self.client.send(pacote)
-        val = self.client.recv(12)
-        return int(val[5:].decode()) # can be int because will be an int id
+        val = self.client.recv(1024)
+        print('VAL :' + str(val))
+        return int(val[4:].decode()) # can be int because will be an int id
 
     def disconnect(self):
         self.client.close()
@@ -33,12 +46,16 @@ class Network:
     def send(self, data, pick=False):
         try:
             if pick:
-                pacote = cria_pacote("10.0.0.3",pickle.dumps(data))
+                print('ENTREI ENVIAR PICKLE')
+                pacote = cria_pacote(IP_SERVER,ipO,pickle.dumps(data),2)
                 self.client.sendall(pacote)
             else:
-                pacote = cria_pacote("10.0.0.3",data)
-                self.client.sendall(str.encode(data))
-                reply = self.client.recv(2048*4+5)
+                pacote = cria_pacote(IP_SERVER,ipO,str.encode(data),1)
+                self.client.sendall(pacote)
+                replyraw = self.client.recv(2048*4+5)
+                print('ENTREI RECEBR PICKLE')
+                print(replyraw)
+                reply = replyraw[4:]
             try:
                 reply = pickle.loads(reply)
             except Exception as e:
@@ -47,6 +64,5 @@ class Network:
             return reply
         except socket.error as e:
             print(e)
-
 
 

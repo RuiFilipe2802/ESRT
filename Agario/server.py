@@ -6,8 +6,8 @@ import random
 import math
 
 # setup sockets
-S = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-S.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+tcp_peer = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+tcp_peer.connect(("127.0.0.1", 5004))
 
 # Set constants
 PORT = 5555
@@ -22,24 +22,26 @@ MASS_LOSS_TIME = 7
 W, H = 1000, 500
 
 HOST_NAME = socket.gethostname()
-SERVER_IP = '10.0.5.3'
+SERVER_IP = '127.0.0.1'
 
-# try to connect to server
-try:
+# try to ipect to server
+'''try:
     S.bind((SERVER_IP, PORT))
 except socket.error as e:
     print(str(e))
     print("[SERVER] Server could not start")
     quit()
 
-S.listen()  # listen for connections
+S.listen()  # listen for ipections
 
-print(f"[SERVER] Server Started with local ip {SERVER_IP}")
+print(f"[SERVER] Server Started with local ip {SERVER_IP}")'''
+
+pacote_jogo = []
 
 # dynamic variables
 players = {}
 balls = []
-connections = 0
+ipections = 0
 _id = 0
 colors = [(255,0,0), (255, 128, 0), (255,255,0), (128,255,0),(0,255,0),(0,255,128),(0,255,255),(0, 128, 255), (0,0,255), (0,0,255), (128,0,255),(255,0,255), (255,0,128),(128,128,128), (0,0,0)]
 start = False
@@ -47,7 +49,15 @@ stat_time = 0
 game_time = "Starting Soon"
 nxt = 1
 
-
+def cria_pacote(ip,data):
+    pacote = bytearray(0)
+    array = ip.split(".")
+    for a in range(len(array)):
+        pacote.append(int(array[a]))
+    ip = socket.inet_ntoa(pacote[0:4])
+    print(ip)
+    pacote[4:] = (bytearray(data.encode()))
+    return pacote
 # FUNCTIONS
 
 def release_mass(players):
@@ -122,17 +132,17 @@ def get_start_location(players):
 		if stop:
 			break
 	return (x,y)
+	
 
-
-def threaded_client(conn, _id):
-	global connections, players, balls, game_time, nxt, start
+def threaded_client(ip, _id, name):
+	global ipections, players, balls, game_time, nxt, start
 
 	current_id = _id
 
 	# recieve a name from the client
-	data = conn.recv(16)
+	data = name
 	name = data.decode("utf-8")
-	print("[LOG]", name, "connected to the server.")
+	print("[LOG]", name, "ipected to the server.")
 
 	# Setup properties for each new player
 	color = colors[current_id]
@@ -140,7 +150,9 @@ def threaded_client(conn, _id):
 	players[current_id] = {"x":x, "y":y,"color":color,"score":0,"name":name}  # x, y color, score, name
 
 	# pickle data and send initial info to clients
-	conn.send(str.encode(str(current_id)))
+	pacote_enviar = cria_pacote(ip,str.encode(str(current_id)))
+	tcp_peer.send(pacote_enviar)
+	#ip.send(str.encode(str(current_id)))
 
 	# server will recieve basic commands from client
 	# it will send back all of the other clients info
@@ -159,7 +171,7 @@ def threaded_client(conn, _id):
 					print(f"[GAME] {name}'s Mass depleting")
 		try:
 			# Recieve data from client
-			data = conn.recv(32)
+			data = tcp_peer.recv(32)
 
 			if not data:
 				break
@@ -197,21 +209,21 @@ def threaded_client(conn, _id):
 				send_data = pickle.dumps((balls,players, game_time))
 
 			# send data back to clients
-			conn.send(send_data)
+			pacote_envia =cria_pacote(ip,send_data)
+			tcp_peer.send(pacote_envia)
 
 		except Exception as e:
 			print(e)
-			break  # if an exception has been reached disconnect client
+			break  # if an exception has been reached disipect client
 
 		time.sleep(0.001)
 
-	# When user disconnects	
-	print("[DISCONNECT] Name:", name, ", Client Id:", current_id, "disconnected")
+	# When user disipects	
+	print("[DISipECT] Name:", name, ", Client Id:", current_id, "disipected")
 
-	connections -= 1 
+	ipections -= 1 
 	del players[current_id]  # remove client information from players list
-	conn.close()  # close connection
-
+	#tcp.close()  # close ipection
 
 # MAINLOOP
 
@@ -219,24 +231,25 @@ def threaded_client(conn, _id):
 create_balls(balls, random.randrange(200,250))
 
 print("[GAME] Setting up level")
-print("[SERVER] Waiting for connections")
-
-# Keep looping to accept new connections
+print("[SERVER] Waiting for ipections")
+# Keep looping to accept new ipections
 while True:
-	
-	host, addr = S.accept()
-	print("[CONNECTION] Connected to:", addr)
-
-	# start game when a client on the server computer connects
-	if connections >= 1 and not(start):
+	#host, addr = S.accept()
+	#print("[ipECTION] ipected to:", addr)
+	# start game when a client on the server computer ipects
+	if ipections >= 1 and not(start):
 		start = True
 		start_time = time.time()
 		print("[STARTED] Game Started")
-
-	# increment connections start new thread then increment ids
-	connections += 1
-	start_new_thread(threaded_client,(host,_id))
-	_id += 1
+	# increment ipections start new thread then increment ids
+	ipections += 1
+	pacote_jogo_rec = tcp_peer.recv(10000)
+	if(len(pacote_jogo_rec)>5):
+		ip = socket.inet_ntoa(pacote_jogo_rec[0:4])
+		name = pacote_jogo_rec[4:]
+		if(len(pacote_jogo_rec)<15):
+			start_new_thread(threaded_client,(ip,_id,name))
+			_id += 1
 
 # when program ends
 print("[SERVER] Server offline")

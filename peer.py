@@ -9,9 +9,11 @@ import threading
 import sys
 import os
 import struct
-from testes_do_tiago.dijkstra import *
+from Agario.dijkstra import *
 import select
 import numpy as np
+
+variavelControlo = "1"
 
 #   Conf
 HOST = '10.0.5.3'      # Standard loopback interface address (localhost)
@@ -28,6 +30,7 @@ neighbours = {}         #   Dictinoary(IP:Cost)
 ip_neighbours = []      #   IP Neighbours
 routing_table = []      #   Routing Table
 array_topologia = []
+ips_topologia = []
 
 mensagem = ""
 
@@ -211,12 +214,11 @@ def set_routing_table(packet):
 
 #   NEXT DATA HOP
 def next_data_hop(packet):
-    ip_destino = socket.inet_ntoa(packet[1:5])
+    ip_destino = socket.inet_ntoa(packet[5:9])
     #print('IP DESTINO :' + str(ip_destino))
     ip_rede_destino = ""
     if(ip_destino == ip_source):
-        print('Chegou ao destino')
-        print(packet[5:len(packet)])
+        print(' ')
     else:
         global routing_table
         x = 0
@@ -268,16 +270,42 @@ def check_costs():
             enviar = '5'
 
 #   SEND DATA
-def sendData(msg,ip):
+def sendData(msg,ip_source,ip):
     #print('AQUI')
     #print(msg)
     #print(ip)
     pacote = bytearray(1)
     pacote[0] = 21
-    array = ip.split(".")
+    array = ip_source.split(".")
     for a in range(len(array)):
         pacote.append(int(array[a]))
-    pacote[6:] = (bytearray(msg.encode()))
+    array1 = ip.split(".")
+    for b in range(len(array1)):
+        pacote.append(int(array1[a]))
+    pacote[10:] = (bytearray(msg.encode()))
+    #print('PACOTE:')
+    #print(pacote)
+    return pacote
+
+def sendData2(timeStamp,ip_source,ip):
+    inteiro = int(timeStamp)
+    decimal = timeStamp - inteiro
+    #print(str(inteiro) + '       .       ' + str(decimal))
+    pacote = bytearray(1)
+    pacote[0] = 21
+    array = ip_source.split(".")
+    for a in range(len(array)):
+        pacote.append(int(array[a]))
+    array1 = ip.split(".")
+    for b in range(len(array1)):
+        pacote.append(int(array1[b]))
+    b_p = inteiro.to_bytes(4,'big')
+    for i in range(len(b_p)):
+        pacote.append(b_p[i])
+    buf = bytearray(struct.pack('>f', decimal))
+    #timeCal[0] = (0b110)
+    for a in range(len(buf)):
+        pacote.append(buf[a])
     #print('PACOTE:')
     #print(pacote)
     return pacote
@@ -380,7 +408,7 @@ def serverComm():
         for s in readable:
             #print(f'Non Blocking - reading...')
             res = ClientSocket.recv(1024)
-            print(res)
+            #print(res)
             if(res[0] == 10):               # GET NEIGHBOURS
                 print('RECEBI VIZINHOS')
                 ip_neighbours = getNeighbours(res)
@@ -461,13 +489,7 @@ def peerListener(ip_src):
             buf2 = struct.unpack('>f', data[9:])
             aux = str(buf2).strip('(').strip(')').strip(',')
             numero = inteiro + float(str(aux))
-            f = open("logs2.txt", "a")
-            f.write(str(numero) + '\n')
-            f.close()
             arrayCustos.append(numero)
-            if len(arrayCustos) == 10:
-                mean = np.mean(arrayCustos)
-                print('Media :' + str(mean))
             timestamp = datetime.fromtimestamp(numero)
             if(ip_rec in ip_neighbours):
                 neighbours[ip_rec] = numero
@@ -486,6 +508,26 @@ def peerListener(ip_src):
 
         elif(data[0] == 21):            # DATA
             ip_enviar = next_data_hop(data)
+            ip_from = socket.inet_ntoa(data[1:5])
+            if(ip_enviar == 1):
+                print('Chegou ao destino')
+                inteiro = int.from_bytes(data[9:13], byteorder='big')
+                buf2 = struct.unpack('>f', data[13:])
+                aux = str(buf2).strip('(').strip(')').strip(',')
+                numero = inteiro + float(str(aux))
+                tempo1 = datetime.fromtimestamp(numero)
+                now = datetime.now()
+                timeStamp = float(now.timestamp())
+                tempo2 = datetime.fromtimestamp(timeStamp)
+                difference = tempo2 - tempo1
+                cost = difference.total_seconds()
+                print('COST: ' + str(cost))
+                ip_sourceWITHUNDRSCR = ip_source.replace(".","_")
+                ficheiro = "logs" + ip_sourceWITHUNDRSCR + ".txt"
+                print(ficheiro)
+                f = open(ficheiro, "a")
+                f.write(str(ip_from) +","+ str(cost) + '\n')
+                f.close()
             if(ip_enviar != 1):
                 socketEnvio = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
                 socketEnvio.sendto(data,(ip_enviar,5000))
@@ -496,8 +538,8 @@ def fun_input():
     while 1:
         global enviar,mensagem
         enviar = input()
-        print('Input: '+enviar)
-        if(enviar == '6'):
+        #print('Input: '+enviar)
+        '''if(enviar == '6'):
             socketEnvio = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
             print('Write message to send:')
             mensagem = input()
@@ -509,7 +551,33 @@ def fun_input():
             if(ip_enviar != 1):
                 #print('ENTREI NO IF')
                 socketEnvio = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-                socketEnvio.sendto(packetData,(ip_enviar,5000))
+                socketEnvio.sendto(packetData,(ip_enviar,5000))'''
+        if(variavelControlo == str(1)):
+            sleep(0.1)
+            while 1:
+                if(len(arrayCustos) == 100):
+                    media = np.mean(arrayCustos)
+                    print(media)
+                sleep(3)
+                #ip = '10.0.3.3'
+                #print('ARRAY TOPOLOGIA :' + str(array_topologia))
+                x = 0
+                while(x < len(array_topologia)):
+                    line = array_topologia[x]
+                    if line[0] not in ips_topologia:
+                        ips_topologia.append(line[0])
+                    x += 1
+                ips_topologia.remove(ip_source)
+                print('IPS DA TOPOLOGIA :' + str(ips_topologia))
+                for ip in ips_topologia:
+                    now = datetime.now()
+                    timeStamp = float(now.timestamp())
+                    socketEnvio = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+                    packetData = sendData2(timeStamp,ip_source,ip)
+                    ip_enviar = next_data_hop(packetData)
+                    if(ip_enviar != 1):
+                        socketEnvio = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+                        socketEnvio.sendto(packetData,(ip_enviar,5000))
             
 
 if __name__ == "__main__":
