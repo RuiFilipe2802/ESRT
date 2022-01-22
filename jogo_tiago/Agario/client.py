@@ -6,7 +6,7 @@ IP_SERVER = "10.0.5.2"
 ipO = sys.argv[1]
 
 
-def cria_pacote(ip, ipO, data, tipo):
+def cria_pacote(ip, ipO, tipo_p,data,tipo):
     pacote = bytearray(0)
     array = ip.split(".")
     for a in range(len(array)):
@@ -14,11 +14,14 @@ def cria_pacote(ip, ipO, data, tipo):
     array1 = ipO.split(".")
     for a in range(len(array1)):
         pacote.append(int(array1[a]))
-    if tipo == 2:
+    #print(len(data))
+    #if len(data)> 20:
+    pacote.append(int(tipo_p))
+    if(tipo == 3):
         for i in range(len(data)):
-            pacote.append(data(i)) 
-    else: 
-        pacote[8:] = data
+            pacote.append(data[i]) 
+    else:
+        pacote[9:] = data
     return pacote
 # FUNCTIONS
 
@@ -34,11 +37,14 @@ class Network:
     def connect(self, name):
         self.client.connect(self.addr)
         print(ipO)
-        pacote = cria_pacote(IP_SERVER,ipO,str(name).encode("utf-8"),1)
+        print("--------Entrei no enviar connect----------")
+        pacote = cria_pacote(IP_SERVER,ipO,1,str(name).encode(),1)
         self.client.send(pacote)
-        val = self.client.recv(1024)
-        print('VAL :' + str(val))
-        return int(val[4:].decode()) # can be int because will be an int id
+        print("--------Entrei no receber id----------")
+        val = self.client.recv(4096)
+        print("--------Recebi o id----------")
+        print('ID : ' + str(val[5:].decode()))
+        return int(val[5:].decode()) # can be int because will be an int id
 
     def disconnect(self):
         self.client.close()
@@ -46,16 +52,18 @@ class Network:
     def send(self, data, pick=False):
         try:
             if pick:
-                print('ENTREI ENVIAR PICKLE')
-                pacote = cria_pacote(IP_SERVER,ipO,pickle.dumps(data),2)
+                print("--------Entrei no enviar pickle----------")
+                pacote = cria_pacote(IP_SERVER,ipO,2,pickle.dumps(data),3)
                 self.client.sendall(pacote)
             else:
-                pacote = cria_pacote(IP_SERVER,ipO,str.encode(data),1)
+                print("--------Entrei no enviar data----------")
+                pacote = cria_pacote(IP_SERVER,ipO,2,str.encode(data),1)
                 self.client.sendall(pacote)
-                replyraw = self.client.recv(2048*4+5)
-                print('ENTREI RECEBR PICKLE')
-                print(replyraw)
-                reply = replyraw[4:]
+                print("--------Entrei no receber data---------")
+                replyraw = self.client.recv(4096)
+                reply = replyraw[5:]
+                print(len(reply))
+                #print(reply)
             try:
                 reply = pickle.loads(reply)
             except Exception as e:
@@ -64,5 +72,4 @@ class Network:
             return reply
         except socket.error as e:
             print(e)
-
 

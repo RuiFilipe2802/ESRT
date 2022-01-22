@@ -1,3 +1,4 @@
+from glob import glob
 import socket
 from _thread import *
 import pickle
@@ -5,11 +6,11 @@ import time
 import random
 import math
 import sys
+import threading
 
 # setup sockets
 tcp_peer = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 tcp_peer.connect(("127.0.0.1", 5009))
-tcp_peer.send(str("c").encode("utf-8"))
 ipO = sys.argv[1]
 # Set constants
 PORT = 5555
@@ -40,6 +41,8 @@ print(f"[SERVER] Server Started with local ip {SERVER_IP}")'''
 
 pacote_jogo = []
 
+lock = threading.Lock()
+
 # dynamic variables
 players = {}
 balls = []
@@ -52,8 +55,7 @@ stat_time = 0
 game_time = "Starting Soon"
 nxt = 1
 
-
-def cria_pacote(ip, ipO, data,tipo):
+def cria_pacote(ip, ipO, tipo_p,data,tipo):
     pacote = bytearray(0)
     array = ip.split(".")
     for a in range(len(array)):
@@ -61,11 +63,12 @@ def cria_pacote(ip, ipO, data,tipo):
     array1 = ipO.split(".")
     for a in range(len(array1)):
         pacote.append(int(array1[a]))
-    if tipo == 2:
+    pacote.append(int(tipo_p))
+    if(tipo == 3):
         for i in range(len(data)):
-            pacote.append(data(i))
+            pacote.append(data[i]) 
     else:
-        pacote[8:] = data
+        pacote[9:] = data
     return pacote
 # FUNCTIONS
 
@@ -148,7 +151,7 @@ def get_start_location(players):
 
 
 def threaded_client(ip, _id, name):
-    global ipections, players, balls, game_time, nxt, start
+    global ipections, players, balls, game_time, nxt, start,ip_recebido,data_recedida,tipo_pacote_recebido
 
     current_id = _id
 
@@ -163,16 +166,19 @@ def threaded_client(ip, _id, name):
     players[current_id] = {"x": x, "y": y, "color": color,
                            "score": 0, "name": name}  # x, y color, score, name
 
+
     # pickle data and send initial info to clients
-    pacote_enviar = cria_pacote(ip, ipO, str(current_id).encode("utf-8"),1)
+    pacote_enviar = cria_pacote( ip, ipO,1, str(current_id).encode("utf-8"),1)
     print("--------Enviar ID----------------")
     print(pacote_enviar)
     tcp_peer.send(pacote_enviar)
+    time.sleep(0.1)
+    print("--------ID Enviado----------------")
     # ip.send(str.encode(str(current_id)))
 
     # server will recieve basic commands from client
     # it will send back all of the other clients info
-
+    outra = 0
     while True:
         if start:
             game_time = round(time.time()-start_time)
@@ -186,19 +192,20 @@ def threaded_client(ip, _id, name):
                     print(f"[GAME] {name}'s Mass depleting")
         try:
             # Recieve data from client
-            while True:
-                dataraw = tcp_peer.recv(36)
-                if(len(dataraw)<0):
-                    pass
-                else:
-                    break
-            print('DATA RAW :' + dataraw)
-            data = dataraw[4:]
+            while outra == 0:
+                lock.acquire(True)
+                if ip == ip_recebido and tipo_pacote_recebido == 2:
+                    outra = 1
+                lock.release()
+            print('IP :' + str(ip) + '\nIP RECEBIDO :' + str(ip_recebido) + "\n")
+            data = data_recedida
+            tipo_pacote_recebido = 0 
+            ip_recebido = ""
             if not data:
                 break
-
-            data = data.decode("utf-8")
-            #print("[DATA] Recieved", data, "from client id:", current_id)
+            print("--------Vou dar decode Data----------------")
+            data = data.decode()
+            print("[DATA] Received", data, "from client id:", current_id)
 
             # look for specific commands from recieved data
             if data.split(" ")[0] == "move":
@@ -230,14 +237,19 @@ def threaded_client(ip, _id, name):
                 # any other command just send back list of players
                 send_data = pickle.dumps((balls, players, game_time))
 
-            print('DATA :' + send_data)
             # send data back to clients
-            pacote_envia = cria_pacote(ip, ipO, send_data,2)
+            print("--------Vou enviar data pickle----------------")
+            pacote_envia = cria_pacote(ip,ipO,3,send_data,3)
+            print(len(send_data))
+            print(len(pacote_envia))
+            #print(send_data)
+            time.sleep(0.1)
             tcp_peer.send(pacote_envia)
 
         except Exception as e:
+            print('ERRO AQUI')
             print(e)
-            break  # if an exception has been reached disipect client
+            #break  # if an exception has been reached disipect client
 
         time.sleep(0.001)
 
@@ -253,33 +265,42 @@ def threaded_client(ip, _id, name):
 
 # setup level with balls
 create_balls(balls, random.randrange(200, 250))
+global ip_recebido, tipo_pacote_recebido, data_recebida
 
 print("[GAME] Setting up level")
 print("[SERVER] Waiting for ipections")
-entrei = 0
 # Keep looping to accept new ipections
 while True:
     #host, addr = S.accept()
     #print("[ipECTION] ipected to:", addr)
     # start game when a client on the server computer ipects
-    if ipections == 0 and not(start):
+    if ipections > 1 and not(start):
         start = True
         start_time = time.time()
         print("[STARTED] Game Started")
     # increment ipections start new thread then increment ids
     ipections += 1
-    print("esperar Nome")
-    try:
-        pacote_jogo_rec = tcp_peer.recv(4096)
-    finally:
-        if(len(pacote_jogo_rec) < 20) and entrei ==0:
-            entrei = 1
-            ip = socket.inet_ntoa(pacote_jogo_rec[:4])
-            print("IP:"+str(ip))
-            name = pacote_jogo_rec[4:]
-            if(len(pacote_jogo_rec) < 20):
-                start_new_thread(threaded_client, (ip, _id, name))
-                _id += 1
+    #print("esperar Nome")
+    pacote_jogo_rec = tcp_peer.recv(4096)
+    ip_recebido = socket.inet_ntoa(pacote_jogo_rec[:4])
+    data_recedida = pacote_jogo_rec[5:]
+    print("------------------------------")
+    print("IP do Pacote:"+str(ip_recebido))
+    print("Tipo do Pacote:"+str(pacote_jogo_rec[4]))
+    print("------------------------------")
+    if(pacote_jogo_rec[4] == 1):
+        name = pacote_jogo_rec[5:]
+        #lock.acquire(True)
+        tipo_pacote_recebido = 1
+        #lock.release()
+        start_new_thread(threaded_client, (ip_recebido, _id, name))
+        _id += 1
+        
+    if(pacote_jogo_rec[4] == 2):
+        #lock.acquire(True)
+        tipo_pacote_recebido = 2
+        #lock.release()
+
 
 # when program ends
 print("[SERVER] Server offline")

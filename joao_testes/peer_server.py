@@ -9,11 +9,13 @@ import threading
 import sys
 import os
 import struct
-from Agario.dijkstra import *
+from dijkstra import *
 import select
 import numpy as np
-
-variavelControlo = "1"
+from _thread import *
+import pickle
+import random
+import math
 
 #   Conf
 HOST = '10.0.5.3'      # Standard loopback interface address (localhost)
@@ -30,7 +32,6 @@ neighbours = {}         #   Dictinoary(IP:Cost)
 ip_neighbours = []      #   IP Neighbours
 routing_table = []      #   Routing Table
 array_topologia = []
-ips_topologia = []
 
 mensagem = ""
 
@@ -214,11 +215,13 @@ def set_routing_table(packet):
 
 #   NEXT DATA HOP
 def next_data_hop(packet):
-    ip_destino = socket.inet_ntoa(packet[5:9])
+    ip_destino = socket.inet_ntoa(packet[1:5])
     #print('IP DESTINO :' + str(ip_destino))
     ip_rede_destino = ""
     if(ip_destino == ip_source):
-        print(' ')
+        #print('Chegou ao destino')
+        #print(packet[5:len(packet)])
+        d = 1+1
     else:
         global routing_table
         x = 0
@@ -270,45 +273,26 @@ def check_costs():
             enviar = '5'
 
 #   SEND DATA
-def sendData(msg,ip_source,ip):
+def sendData(msg,ip_to,ip_from,tpm):
     #print('AQUI')
     #print(msg)
     #print(ip)
-    pacote = bytearray(1)
-    pacote[0] = 21
-    array = ip_source.split(".")
+    pacote1 = bytearray(1)
+    pacote1[0] = 21
+    array = ip_to.split(".")
     for a in range(len(array)):
-        pacote.append(int(array[a]))
-    array1 = ip.split(".")
+        pacote1.append(int(array[a]))
+    array1 = ip_from.split(".")
     for b in range(len(array1)):
-        pacote.append(int(array1[a]))
-    pacote[10:] = (bytearray(msg.encode()))
-    #print('PACOTE:')
-    #print(pacote)
-    return pacote
+        pacote1.append(int(array[b]))
+    pacote1.append(tpm)
+    for c in range(len(msg)):
+        pacote1.append(msg[c])
+    #print('PACOTE 1:')
+    #print(pacote1)
+    socketEnvio = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    socketEnvio.sendto(pacote1,(ip_to,5000))
 
-def sendData2(timeStamp,ip_source,ip):
-    inteiro = int(timeStamp)
-    decimal = timeStamp - inteiro
-    #print(str(inteiro) + '       .       ' + str(decimal))
-    pacote = bytearray(1)
-    pacote[0] = 21
-    array = ip_source.split(".")
-    for a in range(len(array)):
-        pacote.append(int(array[a]))
-    array1 = ip.split(".")
-    for b in range(len(array1)):
-        pacote.append(int(array1[b]))
-    b_p = inteiro.to_bytes(4,'big')
-    for i in range(len(b_p)):
-        pacote.append(b_p[i])
-    buf = bytearray(struct.pack('>f', decimal))
-    #timeCal[0] = (0b110)
-    for a in range(len(buf)):
-        pacote.append(buf[a])
-    #print('PACOTE:')
-    #print(pacote)
-    return pacote
 
 def removePeer(peer):
     global ip_neighbours, ip_source, array_topologia
@@ -408,7 +392,7 @@ def serverComm():
         for s in readable:
             #print(f'Non Blocking - reading...')
             res = ClientSocket.recv(1024)
-            #print(res)
+            print(res)
             if(res[0] == 10):               # GET NEIGHBOURS
                 print('RECEBI VIZINHOS')
                 ip_neighbours = getNeighbours(res)
@@ -459,13 +443,13 @@ def serverComm():
 
 #   THREAD PEER LISTEN
 def peerListener(ip_src):
-    global neighbours, costsGuardados, enviar, pacote12
+    global neighbours, costsGuardados, enviar, pacote12,recebido
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     print('.........')
     s.bind((ip_src, PORT_UDP))
     print ("waiting on port:",PORT_UDP)
     while 1:
-        data, addr = s.recvfrom(1024)
+        data, addr = s.recvfrom(4096)
         if(data[0] == 20):            # RECEIVE TIMESTAMP AND SEND COST
             #print('RECEBI O TIMESTAMP')
             timestampFromPacket = getTimeStampFromPacket(data)
@@ -489,7 +473,13 @@ def peerListener(ip_src):
             buf2 = struct.unpack('>f', data[9:])
             aux = str(buf2).strip('(').strip(')').strip(',')
             numero = inteiro + float(str(aux))
+            f = open("logs2.txt", "a")
+            f.write(str(numero) + '\n')
+            f.close()
             arrayCustos.append(numero)
+            if len(arrayCustos) == 10:
+                mean = np.mean(arrayCustos)
+                print('Media :' + str(mean))
             timestamp = datetime.fromtimestamp(numero)
             if(ip_rec in ip_neighbours):
                 neighbours[ip_rec] = numero
@@ -508,76 +498,239 @@ def peerListener(ip_src):
 
         elif(data[0] == 21):            # DATA
             ip_enviar = next_data_hop(data)
-            ip_from = socket.inet_ntoa(data[1:5])
-            if(ip_enviar == 1):
-                print('Chegou ao destino')
-                inteiro = int.from_bytes(data[9:13], byteorder='big')
-                buf2 = struct.unpack('>f', data[13:])
-                aux = str(buf2).strip('(').strip(')').strip(',')
-                numero = inteiro + float(str(aux))
-                tempo1 = datetime.fromtimestamp(numero)
-                now = datetime.now()
-                timeStamp = float(now.timestamp())
-                tempo2 = datetime.fromtimestamp(timeStamp)
-                difference = tempo2 - tempo1
-                cost = difference.total_seconds()
-                print('COST: ' + str(cost))
-                ip_sourceWITHUNDRSCR = ip_source.replace(".","_")
-                ficheiro = "logs" + ip_sourceWITHUNDRSCR + ".txt"
-                print(ficheiro)
-                f = open(ficheiro, "a")
-                f.write(str(ip_from) +","+ str(cost) + '\n')
-                f.close()
             if(ip_enviar != 1):
                 socketEnvio = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
                 socketEnvio.sendto(data,(ip_enviar,5000))
+            else:
+                #recebi data do jogo
+                global data_game
+                data_game = data
+                recebido = 1
+                #set_p_b_gt(pickle.load(data[10:]))
             #UDP para enviar o data com ip = ip_enviar se ip = 1 nao enviar
-            print('normal data')
-            
+            #print('normal data')
+
+
+recebido = 0
+data_game = ""
+
+PORT = 5552
+
+BALL_RADIUS = 5
+START_RADIUS = 7
+
+ROUND_TIME = 60 * 5
+
+MASS_LOSS_TIME = 7
+
+W, H = 1000, 500
+
+# dynamic variables
+players = {}
+balls = []
+connections = 0
+_id = 0
+colors = [(255,0,0), (255, 128, 0), (255,255,0), (128,255,0),(0,255,0),(0,255,128),(0,255,255),(0, 128, 255), (0,0,255), (0,0,255), (128,0,255),(255,0,255), (255,0,128),(128,128,128), (0,0,0)]
+start = False
+stat_time = 0
+game_time = "Starting Soon"
+nxt = 1
+
+
+# FUNCTIONS
+def release_mass(players):
+	for player in players:
+		p = players[player]
+		if p["score"] > 8:
+			p["score"] = math.floor(p["score"]*0.95)
+
+
+def check_collision(players, balls):
+	to_delete = []
+	for player in players:
+		p = players[player]
+		x = p["x"]
+		y = p["y"]
+		for ball in balls:
+			bx = ball[0]
+			by = ball[1]
+
+			dis = math.sqrt((x - bx)**2 + (y-by)**2)
+			if dis <= START_RADIUS + p["score"]:
+				p["score"] = p["score"] + 0.5
+				balls.remove(ball)
+
+
+def player_collision(players):
+	sort_players = sorted(players, key=lambda x: players[x]["score"])
+	for x, player1 in enumerate(sort_players):
+		for player2 in sort_players[x+1:]:
+			p1x = players[player1]["x"]
+			p1y = players[player1]["y"]
+
+			p2x = players[player2]["x"]
+			p2y = players[player2]["y"]
+
+			dis = math.sqrt((p1x - p2x)**2 + (p1y-p2y)**2)
+			if dis < players[player2]["score"] - players[player1]["score"]*0.85:
+				players[player2]["score"] = math.sqrt(players[player2]["score"]**2 + players[player1]["score"]**2) # adding areas instead of radii
+				players[player1]["score"] = 0
+				players[player1]["x"], players[player1]["y"] = get_start_location(players)
+				print(f"[GAME] " + players[player2]["name"] + " ATE " + players[player1]["name"])
+
+
+def create_balls(balls, n):
+	for i in range(n):
+		while True:
+			stop = True
+			x = random.randrange(0,W)
+			y = random.randrange(0,H)
+			for player in players:
+				p = players[player]
+				dis = math.sqrt((x - p["x"])**2 + (y-p["y"])**2)
+				if dis <= START_RADIUS + p["score"]:
+					stop = False
+			if stop:
+				break
+
+		balls.append((x,y, random.choice(colors)))
+
+
+def get_start_location(players):
+	while True:
+		stop = True
+		x = random.randrange(0,W)
+		y = random.randrange(0,H)
+		for player in players:
+			p = players[player]
+			dis = math.sqrt((x - p["x"])**2 + (y-p["y"])**2)
+			if dis <= START_RADIUS + p["score"]:
+				stop = False
+				break
+		if stop:
+			break
+	return (x,y)
+
+client_list = []
+client_dict = {}
+mensagem = []
+
+def thread_client(id,ip):
+    global client_list, data_game
+    global connections, players, balls, game_time, nxt, start
+    current_id = id
+    
+    #esperar pelo id
+    while(client_list[current_id] == 0):
+        pass
+    client_list[current_id] = 0
+    pacote = mensagem[current_id]
+    name = pacote.decode("utf-8")
+
+    print("[LOG]", name, "connected to the server.")
+    color = colors[current_id]
+    x, y = get_start_location(players)
+    players[current_id] = {"x":x, "y":y,"color":color,"score":0,"name":name}  # x, y color, score, name
+    sendData(str(current_id).encode("utf-8"),ip,ip_source,4)
+
+
+    #falta aqui qql coisa
+    while True:
+        if start:
+            game_time = round(time.time()-start_time)
+            # if the game time passes the round time the game will stop
+            if game_time >= ROUND_TIME:
+                start = False
+            else:
+                if game_time // MASS_LOSS_TIME == nxt:
+                    nxt += 1
+                    release_mass(players)
+                    print(f"[GAME] {name}'s Mass depleting")
+        
+        while client_list[current_id] == 0:
+            pass
+        pacote = mensagem[current_id]
+        client_list[current_id] = 0
+
+        pacote = pacote.decode("utf-8")
+
+        # look for specific commands from recieved data
+        if pacote.split(" ")[0] == "move":
+            split_data = pacote.split(" ")
+            x = int(split_data[1])
+            y = int(split_data[2])
+            players[current_id]["x"] = x
+            players[current_id]["y"] = y
+
+            # only check for collison if the game has started
+            if start:
+                check_collision(players, balls)
+                player_collision(players)
+
+            # if the amount of balls is less than 150 create more
+            if len(balls) < 150:
+                create_balls(balls, random.randrange(100,150))
+                print("[GAME] Generating more orbs")
+
+            send_data = pickle.dumps((balls,players, game_time))
+
+        elif pacote.split(" ")[0] == "id":
+            send_data = str.encode(str(current_id))  # if user requests id then send it
+
+        elif pacote.split(" ")[0] == "jump":
+            send_data = pickle.dumps((balls,players, game_time))
+        else:
+            # any other command just send back list of players
+            send_data = pickle.dumps((balls,players, game_time))
+
+        # send data back to clients
+        #conn.send(send_data)
+        sendData(send_data,ip,ip_source,3)
+        #  # if an exception has been reached disconnect client
+    time.sleep(0.001)
+
+def gaming():
+    while 1:
+        if(enviar == '6'):
+            global connections, players, balls, game_time, nxt, start, start_time, _id, recebido
+            create_balls(balls, random.randrange(200,250))
+
+            print("[GAME] Setting up level")
+            print("[SERVER] Waiting for connections")
+            while True:
+                while recebido == 0:
+                    pass
+                recebido = 0
+                if data_game[9] == 1:   #conexão
+                    #ip que vai associar a id
+                    ip = socket.inet_ntoa(data_game[5:9])
+                    client_list.append(0)
+                    client_dict[ip] = _id
+                    mensagem.append("")
+                    connections += 1
+                    #incia a thread que vai tratar de cada client
+                    _thread.start_new_thread(thread_client,(_id,ip))
+                    client_list[_id] = 1
+                    mensagem[_id] = data_game[10:]
+                    _id += 1
+                elif data_game[9] == 2:
+                    print("desconexao")
+                elif data_game[9] == 3: #recebeu pickle
+                    ip = socket.inet_ntoa(data_game[5:9])
+                    a = client_dict[ip]
+                    client_list[a] = 1
+                    mensagem[a] = data_game[10:]
+                    print("data recebida")
+                if connections > 1 and not(start):
+                    start = True
+                    start_time = time.time()
+                    print("[STARTED] Game started")
+                    #comparar ip e ver posiçao da lista e desbloquear essa     
+
 def fun_input():
     while 1:
         global enviar,mensagem
         enviar = input()
-        #print('Input: '+enviar)
-        '''if(enviar == '6'):
-            socketEnvio = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-            print('Write message to send:')
-            mensagem = input()
-            print('Write ip destination:')
-            ip = input()
-            packetData = sendData(mensagem.strip('\n'),ip.strip('\n'))
-            ip_enviar = next_data_hop(packetData)
-            #print('IP ENVIAR :' + str(ip_enviar))
-            if(ip_enviar != 1):
-                #print('ENTREI NO IF')
-                socketEnvio = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-                socketEnvio.sendto(packetData,(ip_enviar,5000))'''
-        if(variavelControlo == str(1)):
-            sleep(0.1)
-            while 1:
-                if(len(arrayCustos) == 100):
-                    media = np.mean(arrayCustos)
-                    print(media)
-                sleep(3)
-                #ip = '10.0.3.3'
-                #print('ARRAY TOPOLOGIA :' + str(array_topologia))
-                x = 0
-                while(x < len(array_topologia)):
-                    line = array_topologia[x]
-                    if line[0] not in ips_topologia:
-                        ips_topologia.append(line[0])
-                    x += 1
-                ips_topologia.remove(ip_source)
-                #print('IPS DA TOPOLOGIA :' + str(ips_topologia))
-                for ip in ips_topologia:
-                    now = datetime.now()
-                    timeStamp = float(now.timestamp())
-                    socketEnvio = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-                    packetData = sendData2(timeStamp,ip_source,ip)
-                    ip_enviar = next_data_hop(packetData)
-                    if(ip_enviar != 1):
-                        socketEnvio = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-                        socketEnvio.sendto(packetData,(ip_enviar,5000))
             
 
 if __name__ == "__main__":
@@ -587,6 +740,7 @@ if __name__ == "__main__":
 
     #   START THREAD SERVER-PEER TCP
     _thread.start_new_thread(serverComm,())    
+    _thread.start_new_thread(gaming,())
     _thread.start_new_thread(fun_input,())
 
     while 1:

@@ -293,6 +293,25 @@ def sendData(msg,ip_to,ip_from,tpm):
     socketEnvio = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     socketEnvio.sendto(pacote1,(ip_to,5000))
 
+#   SEND DATA
+def sendData_ID(idx,ip_to,ip_from,tpm):
+    #print('AQUI')
+    #print(msg)
+    #print(ip)
+    pacote1 = bytearray(1)
+    pacote1[0] = 21
+    array = ip_to.split(".")
+    for a in range(len(array)):
+        pacote1.append(int(array[a]))
+    array1 = ip_from.split(".")
+    for b in range(len(array1)):
+        pacote1.append(int(array[b]))
+    pacote1.append(tpm)
+    pacote1.append(idx)
+    #print('PACOTE 1:')
+    #print(pacote1)
+    socketEnvio = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    socketEnvio.sendto(pacote1,(ip_to,5000))
 
 def removePeer(peer):
     global ip_neighbours, ip_source, array_topologia
@@ -620,9 +639,10 @@ def thread_client(id,ip):
     global connections, players, balls, game_time, nxt, start
     current_id = id
     
-
+    #esperar pelo id
     while(client_list[current_id] == 0):
         pass
+    client_list[current_id] = 0
     pacote = mensagem[current_id]
     name = pacote.decode("utf-8")
 
@@ -630,7 +650,8 @@ def thread_client(id,ip):
     color = colors[current_id]
     x, y = get_start_location(players)
     players[current_id] = {"x":x, "y":y,"color":color,"score":0,"name":name}  # x, y color, score, name
-    sendData(str(current_id).encode(),ip,ip_source,4)
+    sendData_ID(current_id,ip,ip_source,4)
+
 
     #falta aqui qql coisa
     while True:
@@ -648,9 +669,7 @@ def thread_client(id,ip):
         while client_list[current_id] == 0:
             pass
         pacote = mensagem[current_id]
-
-        if not pacote:
-            break
+        client_list[current_id] = 0
 
         pacote = pacote.decode("utf-8")
 
@@ -702,21 +721,21 @@ def gaming():
                 while recebido == 0:
                     pass
                 recebido = 0
-                print('DATA GAME :')
-                print(data_game)
-                if data_game[9] == 1:
+                if data_game[9] == 1:   #conexão
+                    #ip que vai associar a id
                     ip = socket.inet_ntoa(data_game[5:9])
                     client_list.append(0)
                     client_dict[ip] = _id
                     mensagem.append("")
                     connections += 1
+                    #incia a thread que vai tratar de cada client
                     _thread.start_new_thread(thread_client,(_id,ip))
                     client_list[_id] = 1
                     mensagem[_id] = data_game[10:]
                     _id += 1
                 elif data_game[9] == 2:
                     print("desconexao")
-                elif data_game[9] == 3:
+                elif data_game[9] == 3: #recebeu pickle
                     ip = socket.inet_ntoa(data_game[5:9])
                     a = client_dict[ip]
                     client_list[a] = 1

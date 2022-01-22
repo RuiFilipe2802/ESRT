@@ -8,7 +8,6 @@ from turtle import st
 import ntplib
 from datetime import datetime
 import threading
-import sys
 import os
 import struct
 from dijkstra import *
@@ -46,8 +45,6 @@ server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 server.bind(("127.0.0.1",5009))
     #server.setblocking(0)
 server.listen(5)
-cliente = [] 
-
 
 #   Set time according to NTP Server
 def setTime():
@@ -231,6 +228,7 @@ def next_data_hop(packet):
         recebi_pacote_jogo = packet[5:len(packet)]
         print("------Enviar pacote para o jogo --------")
         print("Ip Origem:"+str(socket.inet_ntoa(recebi_pacote_jogo[:4])))
+        print('RECEBI PACOTE JOGO :' + str(len(recebi_pacote_jogo)))
         print("----------------------------------")
         cliente.send(recebi_pacote_jogo)
         recebi_pacote_jogo  = 0
@@ -299,9 +297,12 @@ def sendData(data,ip, ipO):
     ip = socket.inet_ntoa(pacote[1:5])
     ipO = socket.inet_ntoa(pacote[5:9])
     pacote[9:] = data
+
     print("--------Pacote a enviar pela rede Overlay---------")
+    print(len(data))
     print("IP Destino:"+str(ip))
     print("IP Origem:"+str(ipO))
+    print("Tipo de Pacote:"+str(pacote[9]))
     print("--------------------------------------------------")
     #print('PACOTE:')
     return pacote
@@ -461,7 +462,7 @@ def peerListener(ip_src):
     s.bind((ip_src, PORT_UDP))
     print ("waiting on port:",PORT_UDP)
     while 1:
-        data, addr = s.recvfrom(1024)
+        data, addr = s.recvfrom(4096)
         if(data[0] == 20):            # RECEIVE TIMESTAMP AND SEND COST
             #print('RECEBI O TIMESTAMP')
             timestampFromPacket = getTimeStampFromPacket(data)
@@ -535,30 +536,24 @@ def fun_input():
             
 def app_communication():
     while True:
-        con = 0 
         client, Address = server.accept()
         print(f"Connection Estabished: "+str(Address))
         global cliente
         cliente = client
         while True:
-            try:
-                pacote_jogo = client.recv(4096)
-            finally:
-                if(con == 0):
-                    #cliente.send(str("tou aqui crl").encode("utf-8"))
-                    con = 1
-                if len(pacote_jogo) > 4:
-                    print("--------Pacote Recebido pela TCP jogo---------")
-                    print("Ip Destino:"+str(socket.inet_ntoa(pacote_jogo[:4])))
-                    print("Ip Origem:"+str(socket.inet_ntoa(pacote_jogo[4:8])))
-                    print("----------------------------------------------")
-                    pacote_enviar = sendData(pacote_jogo[8:],pacote_jogo[:4],pacote_jogo[4:8])
-                    ip_enviar = next_data_hop(pacote_enviar)
-                    if(ip_enviar != 1):
-                        #print('ENTREI NO IF')
-                        socketEnvio = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-                        socketEnvio.sendto(pacote_enviar,(ip_enviar,5000))
-                pacote_jogo = 0
+            pacote_jogo = client.recv(4096)
+            print("--------Pacote Recebido pela TCP jogo---------")
+            print('LEN PACOTE JOGO :' + str(len(pacote_jogo)))
+            print("Ip Destino:"+str(socket.inet_ntoa(pacote_jogo[:4])))
+            print("Ip Origem:"+str(socket.inet_ntoa(pacote_jogo[4:8])))
+            print("----------------------------------------------")
+            pacote_enviar = sendData(pacote_jogo[8:],pacote_jogo[:4],pacote_jogo[4:8])
+            ip_enviar = next_data_hop(pacote_enviar)
+            if(ip_enviar != 1):
+                #print('ENTREI NO IF')
+                socketEnvio = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+                socketEnvio.sendto(pacote_enviar,(ip_enviar,5000))
+            pacote_jogo = 0
 
                 
             

@@ -1,27 +1,18 @@
 import contextlib
-from locale import currency
 with contextlib.redirect_stdout(None):
     import pygame
+from client import Network
 import random
-#from Agario.client import Network
 import os
 import time
 pygame.font.init()
-import sys
-import pickle
 
 # Constants
 PLAYER_RADIUS = 10
 START_VEL = 9
 BALL_RADIUS = 5
 
-decision = 1
-
 W, H = 1000, 500
-
-current_id = 0
-
-WIN = None
 
 NAME_FONT = pygame.font.SysFont("comicsans", 20)
 TIME_FONT = pygame.font.SysFont("comicsans", 30)
@@ -33,8 +24,6 @@ COLORS = [(255, 0, 0), (255, 128, 0), (255, 255, 0), (128, 255, 0), (0, 255, 0),
 # Dynamic Variables
 players = {}
 balls = []
-game_time = 0
-data1 = ""
 
 # FUNCTIONS
 
@@ -56,7 +45,6 @@ def convert_time(t):
 
 
 def redraw_window(players, balls, game_time, score):
-    global WIN
     WIN.fill((255, 255, 255))  # fill screen white, to clear old frames
 
     # draw all the orbs/balls
@@ -94,63 +82,19 @@ def redraw_window(players, balls, game_time, score):
     text = TIME_FONT.render("Score: " + str(round(score)), 1, (0, 0, 0))
     WIN.blit(text, (10, 15 + text.get_height()))
 
-#troca de dados com server 
-def set_p_b_gt(r_data):
-    global players, game_time, balls
-    balls, players, game_time = r_data
 
-def set_data():
-    return pickle.dumps(data1)
-
-def get_enviar():
-    global enviar_game
-    return enviar_game
-
-def set_recebida(r):
-    global recebida 
-    recebida = r
-
-def set_current_id(id):
-    global current_id
-    current_id = id
-
-def get_endgame():
-    global endgame
-    return endgame
-
-def set_endgame(e):
-    global endgame
-    endgame = e
-    return endgame
-
-recebida = 0
-enviar_game = 0
-endgame = 0
-    
 def main(name):
-    print('VOU COMEÇAR O JOGO FDPS')
-    global players,decision, data1, endgame, enviar_game, recebida, current_id,balls, game_time
-    #so para testes vou definir aqui
-    decision = 1
-    # start by connecting to the network
-    if decision == 0:
-        server = Network()
-        current_id = server.connect(name)
-        balls, players, game_time = server.send("get")
-    else:
-        while recebida == 0:
-            pass
-        recebida = 0
-        print(balls)
+    global players
 
+    # start by connecting to the network
+    server = Network()
+    current_id = server.connect(name)
+    balls, players, game_time = server.send("get")
 
     # setup the clock, limit to 30fps
     clock = pygame.time.Clock()
 
-    time.sleep(10)
-
     run = True
-    
     while run:
         clock.tick(30)  # 30 fps max
         player = players[current_id]
@@ -161,7 +105,7 @@ def main(name):
         # get key presses
         keys = pygame.key.get_pressed()
 
-        data1 = ""
+        data = ""
         # movement based on key presses
         if keys[pygame.K_LEFT] or keys[pygame.K_a]:
             if player["x"] - vel - PLAYER_RADIUS - player["score"] >= 0:
@@ -179,21 +123,11 @@ def main(name):
             if player["y"] + vel + PLAYER_RADIUS + player["score"] <= H:
                 player["y"] = player["y"] + vel
 
-        data1 = "move " + str(player["x"]) + " " + str(player["y"])
+        data = "move " + str(player["x"]) + " " + str(player["y"])
         #print('--------------------')
         #print(data)
         # send data to server and recieve back all players information
-        if decision == 0:
-            balls, players, game_time = server.send(data1)
-        else:
-            enviar_game = 1 
-            loop = 0
-            while  loop == 0:
-                if recebida == 1:
-                    enviar_game = 0
-                    recebida = 0
-                    loop = 1
-
+        balls, players, game_time = server.send(data)
         #time.sleep(1)
         #print(balls)
         #print(players)
@@ -212,22 +146,28 @@ def main(name):
         # redraw window then update the frame
         redraw_window(players, balls, game_time, player["score"])
         pygame.display.update()
-    if decision == 0:
-        server.disconnect()
-    else:
-        endgame = 0
+
+    server.disconnect()
     pygame.quit()
     quit()
 
 
 # get users name
+while True:
+    name = input("Please enter your name: ")
+    if(0 < len(name) < 20):
+        break
+    else:
+        print(
+            "Error, this name is not allowed (must be between 1 and 19 characters [inclusive])")
 
-def start_gaming(name):# make window start in top left hand corner
-    os.environ['SDL_VIDEO_WINDOW_POS'] = "%d,%d" % (0, 30)
-    global WIN
-    # setup pygame window
-    WIN = pygame.display.set_mode((W, H))
-    pygame.display.set_caption("Game")
 
-    # start game
-    main(name)
+# make window start in top left hand corner
+os.environ['SDL_VIDEO_WINDOW_POS'] = "%d,%d" % (0, 30)
+
+# setup pygame window
+WIN = pygame.display.set_mode((W, H))
+pygame.display.set_caption("Game")
+
+# start game
+main(name)

@@ -291,6 +291,7 @@ def sendData(msg,ip_to,ip_from,tpm):
     #print('PACOTE:')
     #print(pacote1)
     socketEnvio = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    print('NEXT DATA HOP :' + str(next_data_hop(pacote1)))
     socketEnvio.sendto(pacote1,(next_data_hop(pacote1),5000))
 
 def removePeer(peer):
@@ -515,26 +516,34 @@ def thread_game(name):
 recebido = 0
             
 def gaming():
+    aux = False
     while 1:
-        global ip_game_server,recebido,recebida,enviar_game,start,data_game
+        global ip_game_server,recebido,recebida,enviar_game,data_game,enviar
         if(enviar == '6'):
+            print('ENTREI NO ENVIAR = 6')
+            aux = True
+            enviar = 0
+        if aux == True:
             print('COMEÇAR O JOGO')
             name = 'rui'
             print('VOU ENVIAR DATA')
-            sendData(str.encode(name), ip_game_server,ip_source,1)
+            sendData(name.encode(), ip_game_server,ip_source,1)
+            #esperar receção de current id
             while recebido == 0:
                 pass
             start = 1
             print(data_game[10])
-            set_current_id(int(data_game[10:].decode()))
-            set_start(1)
+            set_current_id(int(data_game[10]))
             _thread.start_new_thread(thread_game,(name,))
             sendData("get".encode(),ip_game_server,ip_source,3)
+            #esperar receção de informação de bolas
             while recebido == 0:
                 pass
+            print('DATA GAME :' + str(data_game[10:]) + '\n SIZE: ' + str(len(data_game[10:])))
             set_p_b_gt(pickle.loads(data_game[10:]))
-            time.sleep(1)
-        while get_start() == 1:
+            set_recebida(1)
+            set_endgame(1)
+        while get_endgame() == 1:
             while get_enviar() == 0:
                 pass
             sendData(data1, ip_game_server,ip_source,3)
@@ -543,13 +552,16 @@ def gaming():
             set_p_b_gt(pickle.loads(data_game[10:]))
             recebido = 0
             set_recebida(1)
-        #print("Sai do jogo")
-        #sendData("",ip_game_server,ip_source,2)
+        if aux == True:
+            print("sai do jogo")
+            sendData(4, ip_game_server, ip_source, 2)
+            aux = False
             
 def fun_input():
     while 1:
         global enviar,mensagem
         enviar = input()
+        print('INPUT: ' + enviar)
 
 if __name__ == "__main__":
     
