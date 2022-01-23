@@ -15,7 +15,7 @@ import select
 import numpy as np
 
 #   Conf
-HOST = '10.0.5.3'      # Standard loopback interface address (localhost)
+HOST = '127.0.0.1'      # Standard loopback interface address (localhost)
 PORT_TCP = 9999         # TCP PORT
 PORT_UDP = 5000         # UDP PORT
 
@@ -542,6 +542,8 @@ def app_communication():
         cliente = client
         while True:
             pacote_jogo = client.recv(4096)
+            if(len(pacote_jogo) == 0):
+                    break
             print("--------Pacote Recebido pela TCP jogo---------")
             print('LEN PACOTE JOGO :' + str(len(pacote_jogo)))
             print("Ip Destino:"+str(socket.inet_ntoa(pacote_jogo[:4])))

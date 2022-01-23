@@ -12,7 +12,13 @@ import threading
 tcp_peer = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 tcp_peer.connect(("127.0.0.1", 5009))
 ipO = sys.argv[1]
+
 # Set constants
+
+global ip_recebido, tipo_pacote_recebido, data_recebida
+
+
+
 PORT = 5555
 
 BALL_RADIUS = 5
@@ -152,9 +158,7 @@ def get_start_location(players):
 
 def threaded_client(ip, _id, name):
     global ipections, players, balls, game_time, nxt, start,ip_recebido,data_recedida,tipo_pacote_recebido
-
     current_id = _id
-
     # recieve a name from the client
     data = name
     name = data.decode("utf-8")
@@ -168,7 +172,7 @@ def threaded_client(ip, _id, name):
 
 
     # pickle data and send initial info to clients
-    pacote_enviar = cria_pacote( ip, ipO,1, str(current_id).encode("utf-8"),1)
+    pacote_enviar = cria_pacote( ip, ipO,1, str(current_id).encode(),1)
     print("--------Enviar ID----------------")
     print(pacote_enviar)
     tcp_peer.send(pacote_enviar)
@@ -192,17 +196,17 @@ def threaded_client(ip, _id, name):
                     print(f"[GAME] {name}'s Mass depleting")
         try:
             # Recieve data from client
+            lock.acquire(True)
             while outra == 0:
-                lock.acquire(True)
                 if ip == ip_recebido and tipo_pacote_recebido == 2:
                     outra = 1
-                lock.release()
             print('IP :' + str(ip) + '\nIP RECEBIDO :' + str(ip_recebido) + "\n")
             data = data_recedida
             tipo_pacote_recebido = 0 
-            ip_recebido = ""
+            ip_recebido = " "
             if not data:
                 break
+        
             print("--------Vou dar decode Data----------------")
             data = data.decode()
             print("[DATA] Received", data, "from client id:", current_id)
@@ -245,6 +249,7 @@ def threaded_client(ip, _id, name):
             #print(send_data)
             time.sleep(0.1)
             tcp_peer.send(pacote_envia)
+            lock.release()
 
         except Exception as e:
             print('ERRO AQUI')
@@ -265,8 +270,6 @@ def threaded_client(ip, _id, name):
 
 # setup level with balls
 create_balls(balls, random.randrange(200, 250))
-global ip_recebido, tipo_pacote_recebido, data_recebida
-
 print("[GAME] Setting up level")
 print("[SERVER] Waiting for ipections")
 # Keep looping to accept new ipections
@@ -274,32 +277,35 @@ while True:
     #host, addr = S.accept()
     #print("[ipECTION] ipected to:", addr)
     # start game when a client on the server computer ipects
-    if ipections > 1 and not(start):
-        start = True
-        start_time = time.time()
-        print("[STARTED] Game Started")
+    
     # increment ipections start new thread then increment ids
-    ipections += 1
     #print("esperar Nome")
     pacote_jogo_rec = tcp_peer.recv(4096)
+    lock.acquire(True)
     ip_recebido = socket.inet_ntoa(pacote_jogo_rec[:4])
     data_recedida = pacote_jogo_rec[5:]
+    lock.release()
     print("------------------------------")
     print("IP do Pacote:"+str(ip_recebido))
     print("Tipo do Pacote:"+str(pacote_jogo_rec[4]))
     print("------------------------------")
     if(pacote_jogo_rec[4] == 1):
+        ipections += 1
+        if ipections > 1 and not(start):
+            start = True
+            start_time = time.time()
+            print("[STARTED] Game Started")
         name = pacote_jogo_rec[5:]
-        #lock.acquire(True)
+        lock.acquire(True)
         tipo_pacote_recebido = 1
-        #lock.release()
+        lock.release()
         start_new_thread(threaded_client, (ip_recebido, _id, name))
         _id += 1
         
     if(pacote_jogo_rec[4] == 2):
-        #lock.acquire(True)
+        lock.acquire(True)
         tipo_pacote_recebido = 2
-        #lock.release()
+        lock.release()
 
 
 # when program ends
